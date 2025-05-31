@@ -1,49 +1,73 @@
-// components/Home.tsx
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native'
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Button,
+} from 'react-native'
 import { useNavigation } from '@react-navigation/native'
+import { supabase } from '../lib/supabase'
 
 export default function Home() {
   const navigation = useNavigation()
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>PROFILE</Text>
-      <Image
-        source={{ uri: 'https://placekitten.com/100/100' }}
-        style={styles.avatar}
-      />
-      <Text style={styles.username}>User123</Text>
-      <Text style={styles.editProfile}>Tap Here to Edit Profile</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.header}>PROFILE</Text>
+        <Image
+          source={{ uri: 'https://placekitten.com/100/100' }}
+          style={styles.avatar}
+        />
+        <Text style={styles.username}>Ynaleena23</Text>
+        <Text style={styles.editProfile}>Tap Here to Edit Profile</Text>
 
-      <TouchableOpacity style={styles.row}>
-        <Image source={require('../assets/pets.png')} style={styles.icon} />
-        <Text style={styles.text}>My Pets</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.row}>
+          <Image source={require('../assets/pets.png')} style={styles.icon} />
+          <Text style={styles.text}>My Pets</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.row}>
-        <Image source={require('../assets/petsitter.png')} style={styles.icon} />
-        <Text style={styles.text}>My Pet Sitter Profile</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.row}>
+          <Image
+            source={require('../assets/petsitter.png')}
+            style={styles.icon}
+          />
+          <Text style={styles.text}>My Pet Sitter Profile</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.row}>
-        <Image source={require('../assets/bookings.png')} style={styles.icon} />
-        <Text style={styles.text}>Current & Past Bookings</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.row}>
+          <Image
+            source={require('../assets/bookings.png')}
+            style={styles.icon}
+          />
+          <Text style={styles.text}>Current & Past Bookings</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.row}>
-        <Image source={require('../assets/posts.png')} style={styles.icon} />
-        <Text style={styles.text}>My Posts</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.row}>
+          <Image source={require('../assets/posts.png')} style={styles.icon} />
+          <Text style={styles.text}>My Posts</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Logout Button at Bottom */}
+      <View style={styles.footer}>
+        <Button title="Log Out" color="#C21807" onPress={() => supabase.auth.signOut()} />
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
-    alignItems: 'center',
-    backgroundColor: '#FFF3E3',
     flex: 1,
+    backgroundColor: '#FFF3E3',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 20,
   },
   header: {
     fontSize: 28,
@@ -78,5 +102,11 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 18,
+  },
+  footer: {
+    padding: 20,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderColor: '#ddd',
   },
 })
