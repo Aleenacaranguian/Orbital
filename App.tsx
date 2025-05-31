@@ -38,9 +38,9 @@ export default function App() {
               iconName = 'person-circle-outline'
             } else if (route.name === 'Search') {
               iconName = 'search-outline'
-            } else if (route.name === 'Calls') {
-              iconName = 'call-outline'
-            } else if (route.name === 'Bookings') {
+            } else if (route.name === 'Messaging') {
+              iconName = 'chatbubble-outline'
+            } else if (route.name === 'Community') {
               iconName = 'heart-outline'
             }
 
@@ -52,8 +52,8 @@ export default function App() {
         })}
       >
         <Tab.Screen name="Search" component={DummyScreen} />
-        <Tab.Screen name="Calls" component={DummyScreen} />
-        <Tab.Screen name="Bookings" component={DummyScreen} />
+        <Tab.Screen name="Messaging" component={DummyScreen} />
+        <Tab.Screen name="Community" component={DummyScreen} />
         <Tab.Screen name="Home" component={Home} />
       </Tab.Navigator>
     </NavigationContainer>
