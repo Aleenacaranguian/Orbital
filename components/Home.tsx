@@ -88,12 +88,12 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   icon: {
-    width: 30,
-    height: 30,
+    width: 40,
+    height: 40,
     marginRight: 15,
   },
   text: {
-    fontSize: 18,
+    fontSize: 20,
   },
   footer: {
     padding: 20,
