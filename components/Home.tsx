@@ -38,14 +38,6 @@ export default function Home() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.row}>
-          <Image
-            source={require('../assets/bookings.png')}
-            style={styles.icon}
-          />
-          <Text style={styles.text}>Current & Past Bookings</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.row}>
           <Image source={require('../assets/posts.png')} style={styles.icon} />
           <Text style={styles.text}>My Posts</Text>
         </TouchableOpacity>
