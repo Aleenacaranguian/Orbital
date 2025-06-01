@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   View,
   Text,
@@ -13,16 +14,28 @@ import { supabase } from '../lib/supabase'
 export default function Home() {
   const navigation = useNavigation()
 
+  const handleEditProfile = () => {
+    console.log('Edit profile tapped')
+    // Optionally navigate or open modal
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.header}>PROFILE</Text>
+
+        {/* Profile Picture (not pressable, no overlay) */}
         <Image
-          source={{ uri: 'https://placekitten.com/100/100' }}
+          source={require('../assets/profilepic.png')}
           style={styles.avatar}
         />
-        <Text style={styles.username}>Ynaleena23</Text>
-        <Text style={styles.editProfile}>Tap Here to Edit Profile</Text>
+
+        <Text style={styles.username}>User12345</Text>
+
+        {/* Edit profile is pressable */}
+        <TouchableOpacity onPress={handleEditProfile}>
+          <Text style={styles.editProfile}>Tap Here to Edit Profile</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.row}>
           <Image source={require('../assets/pets.png')} style={styles.icon} />
@@ -43,9 +56,12 @@ export default function Home() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Logout Button at Bottom */}
       <View style={styles.footer}>
-        <Button title="Log Out" color="#C21807" onPress={() => supabase.auth.signOut()} />
+        <Button
+          title="Log Out"
+          color="#C21807"
+          onPress={() => supabase.auth.signOut()}
+        />
       </View>
     </View>
   )
@@ -68,18 +84,20 @@ const styles = StyleSheet.create({
     color: '#8B0000',
   },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 120,
+    height: 120,
+    borderRadius: 50,
     marginVertical: 8,
   },
   username: {
     fontSize: 22,
     fontWeight: '600',
+    marginTop: 8,
   },
   editProfile: {
     color: '#C21807',
     marginBottom: 20,
+    textDecorationLine: 'underline',
   },
   row: {
     flexDirection: 'row',
