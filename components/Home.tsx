@@ -17,13 +17,22 @@ export default function Home() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.header}>PROFILE</Text>
-        <Image
-          source={{ uri: 'https://placekitten.com/100/100' }}
-          style={styles.avatar}
-        />
-        <Text style={styles.username}>Ynaleena23</Text>
-        <Text style={styles.editProfile}>Tap Here to Edit Profile</Text>
 
+        {/* Profile Section */}
+        <View style={styles.profileGroup}>
+          <TouchableOpacity>
+            <Image
+            source={require('../assets/default-profile.png')}
+            style={styles.avatar}
+            />
+          </TouchableOpacity>
+            <Text style={styles.username}>Ynaleena23</Text>
+          <TouchableOpacity>
+            <Text style={styles.editProfile}>Tap Here to Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Menu Options */}
         <TouchableOpacity style={styles.row}>
           <Image source={require('../assets/pets.png')} style={styles.icon} />
           <Text style={styles.text}>My Pets</Text>
@@ -43,9 +52,13 @@ export default function Home() {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Logout Button at Bottom */}
+      {/* Logout Button */}
       <View style={styles.footer}>
-        <Button title="Log Out" color="#C21807" onPress={() => supabase.auth.signOut()} />
+        <Button
+          title="Log Out"
+          color="#C21807"
+          onPress={() => supabase.auth.signOut()}
+        />
       </View>
     </View>
   )
@@ -67,19 +80,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: '#8B0000',
   },
+  profileGroup: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },  
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    marginVertical: 8,
+    width: 100,
+    height: 100,
   },
   username: {
     fontSize: 22,
     fontWeight: '600',
+    marginTop: 4,
   },
   editProfile: {
     color: '#C21807',
-    marginBottom: 20,
+    marginTop: 4,
   },
   row: {
     flexDirection: 'row',
@@ -100,5 +116,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderColor: '#ddd',
-  },
+  }
 })
