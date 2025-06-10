@@ -8,23 +8,24 @@ import {
   ScrollView,
   Button,
 } from 'react-native'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useNavigation } from '@react-navigation/native'
 import { supabase } from '../lib/supabase'
+import EditProfile from '../components/EditProfile'
+import MyPets from '../components/MyPets'
+import MyPetSitterProfile from '../components/MyPetSitterProfile'
+import MyPosts from '../components/MyPosts'
 
-export default function Home() {
-  const navigation = useNavigation()
+const Stack = createNativeStackNavigator()
 
-  const handleEditProfile = () => {
-    console.log('Edit profile tapped')
-    // Optionally navigate or open modal
-  }
+function ProfileScreen() {
+  const navigation = useNavigation<any>()
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.header}>PROFILE</Text>
+        <Text style={styles.header}>HOME</Text>
 
-        {/* Profile Picture (not pressable, no overlay) */}
         <Image
           source={require('../assets/profilepic.png')}
           style={styles.avatar}
@@ -32,25 +33,21 @@ export default function Home() {
 
         <Text style={styles.username}>User12345</Text>
 
-        {/* Edit profile is pressable */}
-        <TouchableOpacity onPress={handleEditProfile}>
+        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
           <Text style={styles.editProfile}>Tap Here to Edit Profile</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.row}>
+        <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('MyPets')}>
           <Image source={require('../assets/pets.png')} style={styles.icon} />
           <Text style={styles.text}>My Pets</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.row}>
-          <Image
-            source={require('../assets/petsitter.png')}
-            style={styles.icon}
-          />
+        <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('MyPetSitterProfile')}>
+          <Image source={require('../assets/petsitter.png')} style={styles.icon} />
           <Text style={styles.text}>My Pet Sitter Profile</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.row}>
+        <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('MyPosts')}>
           <Image source={require('../assets/posts.png')} style={styles.icon} />
           <Text style={styles.text}>My Posts</Text>
         </TouchableOpacity>
@@ -64,6 +61,18 @@ export default function Home() {
         />
       </View>
     </View>
+  )
+}
+
+export default function Home() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="EditProfile" component={EditProfile} options={{ title: 'Edit Profile' }} />
+      <Stack.Screen name="MyPets" component={MyPets} options={{ title: 'My Pets' }} />
+      <Stack.Screen name="MyPetSitterProfile" component={MyPetSitterProfile} options={{ title: 'My Pet Sitter Profile' }} />
+      <Stack.Screen name="MyPosts" component={MyPosts} options={{ title: 'My Posts' }} />
+    </Stack.Navigator>
   )
 }
 
@@ -84,15 +93,15 @@ const styles = StyleSheet.create({
     color: '#8B0000',
   },
   avatar: {
-    width: 120,
-    height: 120,
+    width: 170,
+    height: 170,
     borderRadius: 50,
     marginVertical: 8,
   },
   username: {
     fontSize: 22,
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: 0,
   },
   editProfile: {
     color: '#C21807',
@@ -106,8 +115,8 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   icon: {
-    width: 40,
-    height: 40,
+    width: 50,
+    height: 50,
     marginRight: 15,
   },
   text: {
@@ -119,4 +128,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: '#ddd',
   },
-})
+}) 
