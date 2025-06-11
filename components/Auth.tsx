@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
-import { 
-  Alert, 
-  StyleSheet, 
-  View, 
-  AppState, 
-  Text, 
-  Image, 
+import {
+  Alert,
+  StyleSheet,
+  View,
+  AppState,
+  Text,
+  Image,
   SafeAreaView,
   StatusBar,
   TouchableOpacity
@@ -13,10 +13,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { Input } from '@rneui/themed'
 
-// Tells Supabase Auth to continuously refresh the session automatically if
-// the app is in the foreground. When this is added, you will continue to receive
-// `onAuthStateChange` events with the `TOKEN_REFRESHED` or `SIGNED_OUT` event
-// if the user's session is terminated. This should only be registered once.
+// Manage session auto-refresh
 AppState.addEventListener('change', (state) => {
   if (state === 'active') {
     supabase.auth.startAutoRefresh()
@@ -26,15 +23,15 @@ AppState.addEventListener('change', (state) => {
 })
 
 export default function Auth() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState<string>('')
+  const [password, setPassword] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
 
   async function signInWithEmail() {
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
+      email,
+      password,
     })
 
     if (error) Alert.alert(error.message)
@@ -43,12 +40,9 @@ export default function Auth() {
 
   async function signUpWithEmail() {
     setLoading(true)
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
-      email: email,
-      password: password,
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
     })
 
     if (error) Alert.alert(error.message)
@@ -59,12 +53,9 @@ export default function Auth() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF3E3" />
 
-      {/* Main Content */}
       <View style={styles.content}>
-        {/* App Title */}
         <Text style={styles.appTitle}>PAWPALS</Text>
-        
-        {/* Subtitle */}
+
         <Text style={styles.subtitle}>
           CONNECT, SHARE AND FIND THE PERFECT{'\n'}
           COMPANION FOR YOUR FURRY FRIEND,{'\n'}
@@ -73,31 +64,27 @@ export default function Auth() {
 
         {/* Email Input */}
         <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Email</Text>
           <Input
-            label="Email"
-            leftIcon={{ type: 'font-awesome', name: 'envelope' }}
-            onChangeText={(text) => setEmail(text)}
-            value={email}
             placeholder="email@address.com"
-            autoCapitalize={'none'}
+            onChangeText={(text: string) => setEmail(text)}
+            value={email}
+            autoCapitalize="none"
             keyboardType="email-address"
             inputContainerStyle={styles.inputContainerStyle}
-            labelStyle={styles.inputLabel}
           />
         </View>
 
         {/* Password Input */}
         <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Password</Text>
           <Input
-            label="Password"
-            leftIcon={{ type: 'font-awesome', name: 'lock' }}
-            onChangeText={(text) => setPassword(text)}
-            value={password}
-            secureTextEntry={true}
             placeholder="Password"
-            autoCapitalize={'none'}
+            secureTextEntry
+            onChangeText={(text: string) => setPassword(text)}
+            value={password}
+            autoCapitalize="none"
             inputContainerStyle={styles.inputContainerStyle}
-            labelStyle={styles.inputLabel}
           />
         </View>
 
@@ -119,7 +106,7 @@ export default function Auth() {
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
 
-        {/* Pet Images */}
+        {/* Pet Image */}
         <View style={styles.petImagesContainer}>
           <Image
             source={require('../assets/petstogether.png')}
@@ -172,6 +159,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8B7355',
     fontWeight: '500',
+    marginBottom: 4,
+    marginLeft: 10,
   },
   button: {
     width: '100%',
