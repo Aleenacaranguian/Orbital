@@ -100,7 +100,7 @@ export default function MyPets() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>My Pet Profiles</Text>
+      <Text style={styles.header}>My Pets</Text>
 
       {pets.length === 0 ? (
         <Text style={{ alignSelf: 'center', marginBottom: 20, color: 'gray' }}>
