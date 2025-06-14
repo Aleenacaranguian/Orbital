@@ -11,9 +11,10 @@ import Messaging from './components/Messaging'
 import Community from './components/Community'
 import EditProfile from './components/EditProfile'
 import MyPets from './components/MyPets'
+import ViewPetProfile from './components/ViewPetProfile'
+import EditPetProfile from './components/EditPetProfile'
 import MyPetSitterProfile from './components/MyPetSitterProfile'
 import MyPosts from './components/MyPosts'
-import PetProfile from './components/PetProfile'
 import { Ionicons } from '@expo/vector-icons'
 
 const Tab = createBottomTabNavigator()
@@ -25,7 +26,8 @@ function HomeStack() {
       <Stack.Screen name="HomeMain" component={Home} options={{ headerShown: false }} />
       <Stack.Screen name="EditProfile" component={EditProfile} options={{ title: 'Edit Profile' }} />
       <Stack.Screen name="MyPets" component={MyPets} options={{ title: 'My Pets' }} />
-      <Stack.Screen name="PetProfile" component={PetProfile} options={{ title: 'Pet Profile' }} />
+      <Stack.Screen name="ViewPetProfile" component={ViewPetProfile} options={{ title: 'View Pet Profile' }} />
+      <Stack.Screen name="EditPetProfile" component={EditPetProfile} options={{ title: 'Edit Pet Profile' }} />
       <Stack.Screen name="MyPetSitterProfile" component={MyPetSitterProfile} options={{ title: 'Pet Sitter Profile' }} />
       <Stack.Screen name="MyPosts" component={MyPosts} options={{ title: 'My Posts' }} />
     </Stack.Navigator>

@@ -20,7 +20,7 @@ type HomeStackParamList = {
   HomeMain: undefined;
   EditProfile: undefined;
   MyPets: undefined;
-  PetProfile: { pet: Pet };
+  ViewPetProfile: { pet: Pet };
   MyPetSitterProfile: undefined;
   MyPosts: undefined;
 };
@@ -85,7 +85,7 @@ export default function MyPets() {
   const renderPetItem = ({ item }: { item: Pet }) => (
     <TouchableOpacity
       style={styles.petContainer}
-      onPress={() => navigation.navigate('PetProfile', { pet: item })}
+      onPress={() => navigation.navigate('ViewPetProfile', { pet: item })}
     >
       <Image
         source={item.imageUri ? { uri: item.imageUri } : defaultAvatar}
