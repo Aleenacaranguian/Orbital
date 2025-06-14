@@ -13,18 +13,19 @@ import EditProfile from './components/EditProfile'
 import MyPets from './components/MyPets'
 import MyPetSitterProfile from './components/MyPetSitterProfile'
 import MyPosts from './components/MyPosts'
+import PetProfile from './components/PetProfile'
 import { Ionicons } from '@expo/vector-icons'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
 
-//Home and its related screens are wrapped in a stack
 function HomeStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="HomeMain" component={Home} options={{ headerShown: false }} />
       <Stack.Screen name="EditProfile" component={EditProfile} options={{ title: 'Edit Profile' }} />
       <Stack.Screen name="MyPets" component={MyPets} options={{ title: 'My Pets' }} />
+      <Stack.Screen name="PetProfile" component={PetProfile} options={{ title: 'Pet Profile' }} />
       <Stack.Screen name="MyPetSitterProfile" component={MyPetSitterProfile} options={{ title: 'Pet Sitter Profile' }} />
       <Stack.Screen name="MyPosts" component={MyPosts} options={{ title: 'My Posts' }} />
     </Stack.Navigator>
