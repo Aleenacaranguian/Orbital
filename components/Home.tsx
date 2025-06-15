@@ -149,10 +149,6 @@ function ProfileScreen() {
           color="#C21807"
           onPress={async () => {
             await supabase.auth.signOut();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
           }}
         />
       </View>

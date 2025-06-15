@@ -20,7 +20,7 @@ const Avatar = ({ url, size = 100 }: AvatarProps) => {
         source={
           url
             ? { uri: url }
-            : require('../assets/profilepic.png') // Use local fallback image
+            : require('../assets/profilepic.png') // fallback image
         }
         style={[
           styles.avatar, 
