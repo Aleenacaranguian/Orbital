@@ -127,7 +127,7 @@ export default function PetProfileView({ route, navigation }: Props) {
         <Switch
           value={!!pet.sterilised}
           disabled
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
+          trackColor={{ false: '#ccc', true: '#4CAF50' }}
           thumbColor={pet.sterilised ? 'white' : '#f4f3f4'}
         />
       </View>
@@ -137,7 +137,7 @@ export default function PetProfileView({ route, navigation }: Props) {
         <Switch
           value={!!pet.transmissibleHealthIssues}
           disabled
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
+          trackColor={{ false: '#ccc', true: '#4CAF50' }}
           thumbColor={pet.transmissibleHealthIssues ? 'white' : '#f4f3f4'}
         />
       </View>
@@ -147,7 +147,7 @@ export default function PetProfileView({ route, navigation }: Props) {
         <Switch
           value={!!pet.friendlyWithDogs}
           disabled
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
+          trackColor={{ false: '#ccc', true: '#4CAF50' }}
           thumbColor={pet.friendlyWithDogs ? 'white' : '#f4f3f4'}
         />
       </View>
@@ -157,7 +157,7 @@ export default function PetProfileView({ route, navigation }: Props) {
         <Switch
           value={!!pet.friendlyWithCats}
           disabled
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
+          trackColor={{ false: '#ccc', true: '#4CAF50' }}
           thumbColor={pet.friendlyWithCats ? 'white' : '#f4f3f4'}
         />
       </View>
@@ -167,7 +167,7 @@ export default function PetProfileView({ route, navigation }: Props) {
         <Switch
           value={!!pet.friendlyWithChildren}
           disabled
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
+          trackColor={{ false: '#ccc', true: '#4CAF50' }}
           thumbColor={pet.friendlyWithChildren ? 'white' : '#f4f3f4'}
         />
       </View>
