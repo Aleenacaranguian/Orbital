@@ -113,9 +113,9 @@ export default function MyPets() {
           keyExtractor={(item) => item.id}
         />
       )}
-
-      <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-        <Text style={styles.addText}>＋ Add Pet Profile</Text>
+      
+      <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)} >
+          <Text style={styles.addText}>+ Add Pet Profile</Text>
       </TouchableOpacity>
 
       {/* Modal to add a new pet */}
@@ -186,12 +186,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   addButton: {
-    marginTop: 20,
-    alignItems: 'flex-start',
+    marginTop: 10,
+    marginBottom: 10,
+    backgroundColor: '#f5c28b',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
   },
   addText: {
+    fontWeight: '600',
     fontSize: 16,
-    color: 'red',
+    color: 'white',
   },
   modalContainer: {
     flex: 1,

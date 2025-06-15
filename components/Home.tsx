@@ -146,7 +146,7 @@ function ProfileScreen() {
       <View style={styles.footer}>
         <Button
           title="Log Out"
-          color="#C21807"
+          color="white"
           onPress={async () => {
             await supabase.auth.signOut();
             navigation.reset({
@@ -256,10 +256,10 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   footer: {
-    padding: 20,
+    padding: 10,
     alignItems: 'center',
     borderTopWidth: 1,
     borderColor: '#ddd',
-    backgroundColor: 'white',
+    backgroundColor: '#f5c28b',
   },
 });

@@ -84,7 +84,6 @@ export default function PetProfile({ route, navigation }: Props) {
     alert('Pet details saved!');
   };
 
-  // Set header right button
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -198,55 +197,23 @@ export default function PetProfile({ route, navigation }: Props) {
       </View>
 
       {/* Toggle switches */}
-      <View style={styles.toggleContainer}>
-        <Text style={styles.toggleLabel}>Sterilised</Text>
-        <Switch
-          value={sterilised}
-          onValueChange={setSterilised}
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={sterilised ? 'white' : '#f4f3f4'}
-        />
-      </View>
-
-      <View style={styles.toggleContainer}>
-        <Text style={styles.toggleLabel}>Transmissible Health Issues</Text>
-        <Switch
-          value={transmissibleHealthIssues}
-          onValueChange={setTransmissibleHealthIssues}
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={transmissibleHealthIssues ? 'white' : '#f4f3f4'}
-        />
-      </View>
-
-      <View style={styles.toggleContainer}>
-        <Text style={styles.toggleLabel}>Friendly with Dogs</Text>
-        <Switch
-          value={friendlyWithDogs}
-          onValueChange={setFriendlyWithDogs}
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={friendlyWithDogs ? 'white' : '#f4f3f4'}
-        />
-      </View>
-
-      <View style={styles.toggleContainer}>
-        <Text style={styles.toggleLabel}>Friendly with Cats</Text>
-        <Switch
-          value={friendlyWithCats}
-          onValueChange={setFriendlyWithCats}
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={friendlyWithCats ? 'white' : '#f4f3f4'}
-        />
-      </View>
-
-      <View style={styles.toggleContainer}>
-        <Text style={styles.toggleLabel}>Friendly with Children</Text>
-        <Switch
-          value={friendlyWithChildren}
-          onValueChange={setFriendlyWithChildren}
-          trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={friendlyWithChildren ? 'white' : '#f4f3f4'}
-        />
-      </View>
+      {[
+        { label: 'Sterilised', value: sterilised, setter: setSterilised },
+        { label: 'Transmissible Health Issues', value: transmissibleHealthIssues, setter: setTransmissibleHealthIssues },
+        { label: 'Friendly with Dogs', value: friendlyWithDogs, setter: setFriendlyWithDogs },
+        { label: 'Friendly with Cats', value: friendlyWithCats, setter: setFriendlyWithCats },
+        { label: 'Friendly with Children', value: friendlyWithChildren, setter: setFriendlyWithChildren },
+      ].map(({ label, value, setter }) => (
+        <View key={label} style={styles.toggleContainer}>
+          <Text style={styles.toggleLabel}>{label}</Text>
+          <Switch
+            value={value}
+            onValueChange={setter}
+            trackColor={{ false: '#ccc', true: '#4CAF50' }}
+            thumbColor={value ? 'white' : '#f4f3f4'}
+          />
+        </View>
+      ))}
     </KeyboardAwareScrollView>
   );
 }
