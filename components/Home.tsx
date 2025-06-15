@@ -1,3 +1,4 @@
+//home.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -17,8 +18,36 @@ import EditProfile from '../components/EditProfile';
 import MyPets from '../components/MyPets';
 import MyPetSitterProfile from '../components/MyPetSitterProfile';
 import MyPosts from '../components/MyPosts';
+import ViewPetProfile from '../components/ViewPetProfile';
+import EditPetProfile from '../components/EditPetProfile';
 
-const Stack = createNativeStackNavigator();
+// Define the Pet type to match your Supabase table
+export type Pet = {
+  id: string; // user_id
+  name: string; // pet_name
+  birthday?: string | null;
+  pet_type?: string | null;
+  size?: string | null;
+  sterilised?: boolean;
+  transmissible_health_issues?: boolean;
+  friendly_with_dogs?: boolean;
+  friendly_with_cats?: boolean;
+  friendly_with_children?: boolean;
+  pet_url?: string | null; // Store the storage path, not full URL
+};
+
+// Navigation types
+export type HomeStackParamList = {
+  ProfileScreen: undefined;
+  EditProfile: undefined;
+  MyPets: undefined;
+  ViewPetProfile: { pet: Pet };
+  EditPetProfile: { pet: Pet };
+  MyPetSitterProfile: undefined;
+  MyPosts: undefined;
+};
+
+const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -60,18 +89,29 @@ function ProfileScreen() {
   useEffect(() => {
     fetchProfile();
 
-    // Set up real-time subscription
-    const subscription = supabase.channel('profile_changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'profiles',
-        filter: `id=eq.${(supabase.auth.getUser() as any)?.id}`
-      }, fetchProfile)
-      .subscribe();
+    // Set up real-time subscription with proper async handling
+    const setupSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const subscription = supabase.channel('profile_changes')
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`
+          }, fetchProfile)
+          .subscribe();
 
+        return () => {
+          supabase.removeChannel(subscription);
+        };
+      }
+    };
+
+    const cleanup = setupSubscription();
     return () => {
-      supabase.removeChannel(subscription);
+      cleanup.then(fn => fn && fn());
     };
   }, []);
 
@@ -108,8 +148,6 @@ function ProfileScreen() {
         <Text style={styles.username}>
           @{profile?.username || 'user'}
         </Text>
-
-
 
         <TouchableOpacity 
           onPress={() => navigation.navigate('EditProfile')}
@@ -177,6 +215,16 @@ export default function Home() {
         name="MyPets" 
         component={MyPets} 
         options={{ title: 'My Pets' }} 
+      />
+      <Stack.Screen 
+        name="ViewPetProfile" 
+        component={ViewPetProfile} 
+        options={{ title: 'Pet Profile' }} 
+      />
+      <Stack.Screen 
+        name="EditPetProfile" 
+        component={EditPetProfile} 
+        options={{ title: 'Edit Pet' }} 
       />
       <Stack.Screen 
         name="MyPetSitterProfile" 

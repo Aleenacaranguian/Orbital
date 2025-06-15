@@ -1,3 +1,4 @@
+//viewpetprofile.tsx 
 import React, { useLayoutEffect, useEffect, useState } from 'react';
 import {
   View,
@@ -10,41 +11,37 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { supabase } from '../lib/supabase';
+import { HomeStackParamList, Pet } from './Home';
 
-type Pet = {
-  id: string;
-  name: string;
-  imageUri: string | null;
-  birthday?: string;
-  type?: string;
-  breed?: string;
-  size?: string;
-  sterilised?: boolean;
-  transmissibleHealthIssues?: boolean;
-  friendlyWithDogs?: boolean;
-  friendlyWithCats?: boolean;
-  friendlyWithChildren?: boolean;
-};
-
-type HomeStackParamList = {
-  PetProfileView: { pet: Pet; updatedPet?: Pet };
-  EditPetProfile: { pet: Pet };
-};
-
-type Props = NativeStackScreenProps<HomeStackParamList, 'PetProfileView'>;
+type Props = NativeStackScreenProps<HomeStackParamList, 'ViewPetProfile'>;
 
 const defaultAvatar = require('../assets/default-profile.png');
 
-export default function PetProfileView({ route, navigation }: Props) {
-  // Use local state so we can update pet info on return from Edit
-  const [pet, setPet] = useState(route.params.pet);
+export default function ViewPetProfile({ route, navigation }: Props) {
+  const [pet, setPet] = useState<Pet>(route.params.pet);
 
-  // If updatedPet param comes in (from Edit screen), update pet state
+  // Get pet image URL from Supabase storage
+  const getPetImageUrl = (petUrl: string | null | undefined) => {
+    if (!petUrl) return null;
+    
+    const { data } = supabase.storage
+      .from('my-pets')
+      .getPublicUrl(petUrl);
+    
+    return data.publicUrl;
+  };
+
+  // Listen for navigation params updates (when coming back from edit)
   useEffect(() => {
-    if (route.params.updatedPet) {
-      setPet(route.params.updatedPet);
-    }
-  }, [route.params.updatedPet]);
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (route.params?.pet) {
+        setPet(route.params.pet);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, route.params?.pet]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -61,6 +58,22 @@ export default function PetProfileView({ route, navigation }: Props) {
     });
   }, [navigation, pet]);
 
+  // Format birthday for display
+  const formatBirthday = (birthday: string | null | undefined) => {
+    if (!birthday) return 'Not set';
+    
+    try {
+      // If birthday is in ISO format (YYYY-MM-DD), convert to DD/MM/YYYY
+      if (birthday.includes('-')) {
+        const [year, month, day] = birthday.split('-');
+        return `${day}/${month}/${year}`;
+      }
+      return birthday;
+    } catch (error) {
+      return birthday || 'Not set';
+    }
+  };
+
   return (
     <KeyboardAwareScrollView
       style={{ backgroundColor: '#fef5ec' }}
@@ -69,7 +82,7 @@ export default function PetProfileView({ route, navigation }: Props) {
       enableOnAndroid={true}
     >
       <Image
-        source={pet.imageUri ? { uri: pet.imageUri } : defaultAvatar}
+        source={pet.pet_url ? { uri: getPetImageUrl(pet.pet_url) } : defaultAvatar}
         style={styles.avatar}
       />
 
@@ -86,7 +99,7 @@ export default function PetProfileView({ route, navigation }: Props) {
       <Text style={styles.label}>Birthday</Text>
       <TextInput
         style={styles.input}
-        value={pet.birthday || ''}
+        value={formatBirthday(pet.birthday)}
         editable={false}
         selectTextOnFocus={false}
       />
@@ -94,15 +107,7 @@ export default function PetProfileView({ route, navigation }: Props) {
       <Text style={styles.label}>Pet Type</Text>
       <TextInput
         style={styles.input}
-        value={pet.type || ''}
-        editable={false}
-        selectTextOnFocus={false}
-      />
-
-      <Text style={styles.label}>Breed</Text>
-      <TextInput
-        style={styles.input}
-        value={pet.breed || ''}
+        value={pet.pet_type || 'Not set'}
         editable={false}
         selectTextOnFocus={false}
       />
@@ -110,7 +115,7 @@ export default function PetProfileView({ route, navigation }: Props) {
       <Text style={styles.label}>Pet Size</Text>
       <TextInput
         style={styles.input}
-        value={pet.size || ''}
+        value={pet.size || 'Not set'}
         editable={false}
         selectTextOnFocus={false}
       />
@@ -129,40 +134,40 @@ export default function PetProfileView({ route, navigation }: Props) {
       <View style={styles.toggleContainer}>
         <Text style={styles.toggleLabel}>Transmissible Health Issues</Text>
         <Switch
-          value={!!pet.transmissibleHealthIssues}
+          value={!!pet.transmissible_health_issues}
           disabled
           trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={pet.transmissibleHealthIssues ? 'white' : '#f4f3f4'}
+          thumbColor={pet.transmissible_health_issues ? 'white' : '#f4f3f4'}
         />
       </View>
 
       <View style={styles.toggleContainer}>
         <Text style={styles.toggleLabel}>Friendly with Dogs</Text>
         <Switch
-          value={!!pet.friendlyWithDogs}
+          value={!!pet.friendly_with_dogs}
           disabled
           trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={pet.friendlyWithDogs ? 'white' : '#f4f3f4'}
+          thumbColor={pet.friendly_with_dogs ? 'white' : '#f4f3f4'}
         />
       </View>
 
       <View style={styles.toggleContainer}>
         <Text style={styles.toggleLabel}>Friendly with Cats</Text>
         <Switch
-          value={!!pet.friendlyWithCats}
+          value={!!pet.friendly_with_cats}
           disabled
           trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={pet.friendlyWithCats ? 'white' : '#f4f3f4'}
+          thumbColor={pet.friendly_with_cats ? 'white' : '#f4f3f4'}
         />
       </View>
 
       <View style={styles.toggleContainer}>
         <Text style={styles.toggleLabel}>Friendly with Children</Text>
         <Switch
-          value={!!pet.friendlyWithChildren}
+          value={!!pet.friendly_with_children}
           disabled
           trackColor={{ false: '#ccc', true: 'lightgreen' }}
-          thumbColor={pet.friendlyWithChildren ? 'white' : '#f4f3f4'}
+          thumbColor={pet.friendly_with_children ? 'white' : '#f4f3f4'}
         />
       </View>
     </KeyboardAwareScrollView>
