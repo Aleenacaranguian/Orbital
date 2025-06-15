@@ -14,6 +14,7 @@ import MyPets from './components/MyPets'
 import ViewPetProfile from './components/ViewPetProfile'
 import EditPetProfile from './components/EditPetProfile'
 import MyPetSitterProfile from './components/MyPetSitterProfile'
+import EditPetSitterProfile from './components/EditPetSitterProfile'
 import MyPosts from './components/MyPosts'
 import { Ionicons } from '@expo/vector-icons'
 
@@ -29,6 +30,7 @@ function HomeStack() {
       <Stack.Screen name="ViewPetProfile" component={ViewPetProfile} options={{ title: 'View Pet Profile' }} />
       <Stack.Screen name="EditPetProfile" component={EditPetProfile} options={{ title: 'Edit Pet Profile' }} />
       <Stack.Screen name="MyPetSitterProfile" component={MyPetSitterProfile} options={{ title: 'Pet Sitter Profile' }} />
+      <Stack.Screen name="EditPetSitterProfile" component={EditPetSitterProfile} options={{ title: 'Edit Pet Sitter Profile' }} />
       <Stack.Screen name="MyPosts" component={MyPosts} options={{ title: 'My Posts' }} />
     </Stack.Navigator>
   )

@@ -37,8 +37,14 @@ const defaultAvatar = require('../assets/default-profile.png');
 
 export default function PetProfileView({ route, navigation }: Props) {
   // Use local state so we can update pet info on return from Edit
-  const [pet, setPet] = useState(route.params.pet);
-
+  const [pet, setPet] = useState(
+    route.params?.pet ?? {
+      id: '',
+      name: '',
+      // other default pet fields
+    }
+  );
+  
   // If updatedPet param comes in (from Edit screen), update pet state
   useEffect(() => {
     if (route.params.updatedPet) {
