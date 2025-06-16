@@ -1,4 +1,4 @@
-//mypets.tsx
+// mypets.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, Image, TouchableOpacity,
@@ -10,6 +10,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 import { HomeStackParamList, Pet } from './Home';
 
+// local fallback image
 const defaultAvatar = require('../assets/default-profile.png');
 
 type MyPetsScreenProp = NativeStackNavigationProp<HomeStackParamList, 'MyPets'>;
@@ -24,32 +25,24 @@ export default function MyPets() {
   const [newPetImage, setNewPetImage] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  // Get pet image URL from Supabase storage
+  // get public URL of the image stored in Supabase
   const getPetImageUrl = (petUrl: string | null) => {
     if (!petUrl) return null;
-    
-    const { data } = supabase.storage
-      .from('my-pets')
-      .getPublicUrl(petUrl);
-    
-    return data.publicUrl;
+    const { data } = supabase.storage.from('my-pets').getPublicUrl(petUrl);
+    return data?.publicUrl || null;
   };
 
-  // Upload image to Supabase storage
+  // upload image to Supabase storage
   const uploadPetImage = async (imageUri: string, petName: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
-      // Create file name
       const fileExt = imageUri.split('.').pop();
       const fileName = `${user.id}_${petName}_${Date.now()}.${fileExt}`;
-
-      // Convert image to blob
       const response = await fetch(imageUri);
       const blob = await response.blob();
 
-      // Upload to Supabase storage
       const { data, error } = await supabase.storage
         .from('my-pets')
         .upload(fileName, blob, {
@@ -58,27 +51,25 @@ export default function MyPets() {
         });
 
       if (error) throw error;
-      return data.path; // Return the storage path, not the full URL
+      return data.path;
     } catch (error) {
       console.error('Error uploading image:', error);
       throw error;
     }
   };
 
-  // Fetch pets from Supabase
+  // fetch pets from Supabase
   const fetchPets = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
         const { data, error } = await supabase
           .from('my_pets')
           .select('*')
           .eq('id', user.id);
-        
+
         if (error) throw error;
-        
-        // Transform data to match local Pet type
+
         const transformedPets: Pet[] = (data || []).map(pet => ({
           id: pet.id,
           name: pet.name,
@@ -92,7 +83,7 @@ export default function MyPets() {
           friendly_with_children: pet.friendly_with_children,
           pet_url: pet.pet_url
         }));
-        
+
         setPets(transformedPets);
       }
     } catch (error) {
@@ -103,7 +94,7 @@ export default function MyPets() {
     }
   };
 
-  // Add new pet to Supabase
+  // add pet entry to Supabase
   const handleAddPet = async () => {
     if (!newPetName.trim()) {
       Alert.alert('Error', 'Please enter a pet name.');
@@ -113,10 +104,9 @@ export default function MyPets() {
     setAdding(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (user) {
-        // Check if pet name already exists for this user
-        const { data: existingPet, error: checkError } = await supabase
+        const { data: existingPet } = await supabase
           .from('my_pets')
           .select('name')
           .eq('id', user.id)
@@ -129,18 +119,16 @@ export default function MyPets() {
           return;
         }
 
-        // Upload image if selected
         let petUrl = null;
         if (newPetImage) {
           try {
             petUrl = await uploadPetImage(newPetImage, newPetName.trim());
           } catch (error) {
-            console.error('Error uploading image:', error);
-            Alert.alert('Warning', 'Pet was added but image upload failed.');
+            console.error('Image upload error:', error);
+            Alert.alert('Warning', 'Pet added but image upload failed.');
           }
         }
 
-        // Insert new pet
         const { error } = await supabase
           .from('my_pets')
           .insert({
@@ -159,24 +147,21 @@ export default function MyPets() {
 
         if (error) throw error;
 
-        // Refresh the pets list
         await fetchPets();
-        
         setNewPetName('');
         setNewPetImage(null);
         setModalVisible(false);
-        
         Alert.alert('Success', 'Pet added successfully!');
       }
     } catch (error) {
-      console.error('Error adding pet:', error);
-      Alert.alert('Error', 'Failed to add pet. Please try again.');
+      console.error('Add pet error:', error);
+      Alert.alert('Error', 'Failed to add pet.');
     } finally {
       setAdding(false);
     }
   };
 
-  // Delete pet from Supabase
+  // delete pet and image from Supabase
   const handleDeletePet = async (petName: string) => {
     Alert.alert(
       'Delete Pet',
@@ -189,9 +174,8 @@ export default function MyPets() {
           onPress: async () => {
             try {
               const { data: { user } } = await supabase.auth.getUser();
-              
+
               if (user) {
-                // Get pet data before deletion to remove image from storage
                 const { data: petData } = await supabase
                   .from('my_pets')
                   .select('pet_url')
@@ -199,7 +183,6 @@ export default function MyPets() {
                   .eq('name', petName)
                   .single();
 
-                // Delete pet from database
                 const { error } = await supabase
                   .from('my_pets')
                   .delete()
@@ -208,23 +191,18 @@ export default function MyPets() {
 
                 if (error) throw error;
 
-                // Delete image from storage if it exists
                 if (petData?.pet_url) {
-                  try {
-                    await supabase.storage
-                      .from('my-pets')
-                      .remove([petData.pet_url]);
-                  } catch (storageError) {
-                    console.error('Error deleting image from storage:', storageError);
-                  }
+                  await supabase.storage
+                    .from('my-pets')
+                    .remove([petData.pet_url]);
                 }
-                
+
                 await fetchPets();
-                Alert.alert('Success', 'Pet deleted successfully!');
+                Alert.alert('Success', 'Pet deleted.');
               }
             } catch (error) {
-              console.error('Error deleting pet:', error);
-              Alert.alert('Error', 'Failed to delete pet. Please try again.');
+              console.error('Delete pet error:', error);
+              Alert.alert('Error', 'Delete failed.');
             }
           }
         }
@@ -232,6 +210,7 @@ export default function MyPets() {
     );
   };
 
+  // pick image from gallery
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -247,49 +226,54 @@ export default function MyPets() {
   useEffect(() => {
     fetchPets();
 
-    // Set up real-time subscription for pets
     const setupSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
-        const subscription = supabase.channel('pets_changes')
-          .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: 'my_pets',
-            filter: `id=eq.${user.id}`
-          }, fetchPets)
+        const channel = supabase.channel('pets_channel')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'my_pets',
+              filter: `id=eq.${user.id}`
+            },
+            fetchPets
+          )
           .subscribe();
 
-        return () => {
-          supabase.removeChannel(subscription);
-        };
+        return () => supabase.removeChannel(channel);
       }
     };
 
-    const cleanup = setupSubscription();
+    const unsubscribe = setupSubscription();
     return () => {
-      cleanup.then(fn => fn && fn());
+      unsubscribe?.then(cleanup => cleanup && cleanup());
     };
   }, []);
 
-  const renderPetItem = ({ item }: { item: Pet }) => (
-    <TouchableOpacity
-      style={styles.petContainer}
-      onPress={() => navigation.navigate('ViewPetProfile', { pet: item })}
-      onLongPress={() => handleDeletePet(item.name)}
-    >
-      <Image
-        source={item.pet_url ? { uri: getPetImageUrl(item.pet_url) } : defaultAvatar}
-        style={styles.avatar}
-      />
-      <View style={styles.petInfo}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.tapInstruction}>Tap to view • Long press to delete</Text>
-        {item.pet_type && <Text style={styles.petType}>{item.pet_type}</Text>}
-      </View>
-    </TouchableOpacity>
-  );
+  // show each pet card
+  const renderPetItem = ({ item }: { item: Pet }) => {
+    const imageSource =
+      item.pet_url && getPetImageUrl(item.pet_url)
+        ? { uri: getPetImageUrl(item.pet_url) }
+        : defaultAvatar;
+
+    return (
+      <TouchableOpacity
+        style={styles.petContainer}
+        onPress={() => navigation.navigate('ViewPetProfile', { pet: item })}
+        onLongPress={() => handleDeletePet(item.name)}
+      >
+        <Image source={imageSource} style={styles.avatar} />
+        <View style={styles.petInfo}>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.tapInstruction}>Tap to view • Long press to delete</Text>
+          {item.pet_type && <Text style={styles.petType}>{item.pet_type}</Text>}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (
@@ -318,14 +302,13 @@ export default function MyPets() {
         />
       )}
 
-      <TouchableOpacity 
-        style={styles.addButton} 
+      <TouchableOpacity
+        style={styles.addButton}
         onPress={() => setModalVisible(true)}
       >
         <Text style={styles.addText}>＋ Add Pet Profile</Text>
       </TouchableOpacity>
 
-      {/* Modal to add a new pet */}
       <Modal visible={modalVisible} animationType="slide" transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -345,7 +328,7 @@ export default function MyPets() {
               <Text style={styles.pickImageText}>Tap to upload image (optional)</Text>
             </TouchableOpacity>
             <View style={styles.modalButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={handleAddPet}
                 disabled={adding}
                 style={[styles.modalButtonContainer, adding && styles.disabledButton]}
@@ -356,7 +339,7 @@ export default function MyPets() {
                   <Text style={styles.modalButton}>Add</Text>
                 )}
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setModalVisible(false);
                   setNewPetName('');
@@ -373,6 +356,7 @@ export default function MyPets() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -515,3 +499,4 @@ const styles = StyleSheet.create({
     color: 'red',
   },
 });
+
