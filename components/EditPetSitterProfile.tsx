@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useEffect, useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ const defaultAvatar = require('../assets/default-profile.png');
 const defaultServiceImage = require('../assets/petsitter.png');
 
 type Sitter = {
-  imageUri?: string | null;
+  imageUri: string | null;
   aboutMe: string;
   experience: string;
   skills: string;
@@ -33,59 +33,74 @@ type Service = {
 };
 
 type HomeStackParamList = {
-  PetSitterProfileView: { sitter: Sitter; updatedSitter?: Sitter };
+  Home: undefined;
+  PetSitterProfile: { sitter: Sitter };
   EditPetSitterProfile: { sitter: Sitter };
-  ViewService: { service: Service; onSave: (updatedService: Service) => void };
+  EditService: { service: Service; onSave: (updatedService: Service) => void };
 };
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'PetSitterProfileView'>;
+type Props = NativeStackScreenProps<HomeStackParamList, 'EditPetSitterProfile'>;
 
-export default function PetSitterProfileView({ route, navigation }: Props) {
-  const [sitter, setSitter] = useState<Sitter>(
-    route.params?.sitter ?? {
-      aboutMe: '',
-      experience: '',
-      skills: '',
-      ownsPets: false,
-      volunteers: false,
-      worksWith: false,
-    }
-  );
+export default function EditPetSitterProfileScreen({ route, navigation }: Props) {
+  const { sitter } = route.params;
 
-  const [services, setServices] = useState<Service[]>([
-    {
-      id: '1',
+  const [aboutMe, setAboutMe] = useState(sitter.aboutMe || '');
+  const [experience, setExperience] = useState(sitter.experience || '');
+  const [skills, setSkills] = useState(sitter.skills || '');
+  const [ownsPets, setOwnsPets] = useState(sitter.ownsPets);
+  const [volunteers, setVolunteers] = useState(sitter.volunteers);
+  const [worksWith, setWorksWith] = useState(sitter.worksWith);
+  const [services, setServices] = useState<Service[]>([]);
+
+  const onSave = () => {
+    console.log({
+      aboutMe,
+      experience,
+      skills,
+      ownsPets,
+      volunteers,
+      worksWith,
+      services,
+    });
+    alert('Pet sitter details saved!');
+  };
+
+  const handleAddService = () => {
+    const newService: Service = {
+      id: Date.now().toString(),
       title: 'New Service',
-      type: 'Dog Walking',
+      type: 'Service Type',
       imageUri: null,
-    },
-  ]);
+    };
+    setServices(prev => [...prev, newService]);
+  };
 
-  useEffect(() => {
-    if (route.params?.updatedSitter) {
-      setSitter(route.params.updatedSitter);
-    }
-  }, [route.params?.updatedSitter]);
+  const handleEditService = (service: Service) => {
+    navigation.navigate('EditService', {
+      service,
+      onSave: (updatedService: Service) => {
+        setServices(prev =>
+          prev.map(s => (s.id === updatedService.id ? updatedService : s))
+        );
+      },
+    });
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
-          onPress={() => navigation.navigate('EditPetSitterProfile', { sitter })}
+          onPress={() => {
+            onSave();
+            navigation.goBack();
+          }}
           style={{ marginRight: 15 }}
         >
-          <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>Edit</Text>
+          <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>Done</Text>
         </TouchableOpacity>
       ),
     });
-  }, [navigation, sitter]);
-
-  const handleViewService = (service: Service) => {
-    navigation.navigate('ViewService', {
-      service,
-      onSave: () => {},
-    });
-  };
+  }, [navigation, aboutMe, experience, skills, ownsPets, volunteers, worksWith, services]);
 
   return (
     <KeyboardAwareScrollView
@@ -107,16 +122,20 @@ export default function PetSitterProfileView({ route, navigation }: Props) {
       <TextInput
         style={[styles.input, styles.aboutMeInput]}
         multiline
-        value={sitter.aboutMe}
-        editable={false}
+        value={aboutMe}
+        onChangeText={setAboutMe}
+        placeholder="Tell us about yourself..."
+        placeholderTextColor="gray"
       />
 
       <View style={styles.section}>
         <Text style={styles.label}>Years of Experience</Text>
         <TextInput
           style={styles.input}
-          value={sitter.experience}
-          editable={false}
+          value={experience}
+          onChangeText={setExperience}
+          placeholder="e.g. 2 - 5"
+          placeholderTextColor="gray"
         />
       </View>
 
@@ -124,44 +143,34 @@ export default function PetSitterProfileView({ route, navigation }: Props) {
         <Text style={styles.label}>Any Other Pet-Related Skills</Text>
         <TextInput
           style={styles.input}
-          value={sitter.skills}
-          editable={false}
+          value={skills}
+          onChangeText={setSkills}
+          placeholder="e.g. Certified in pet first aid"
+          placeholderTextColor="gray"
         />
       </View>
 
       <View style={styles.section}>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Owns pets</Text>
-          <Switch
-            value={!!sitter.ownsPets}
-            disabled
-            trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.ownsPets ? 'white' : '#f4f3f4'}
-          />
+          <Switch value={ownsPets} onValueChange={setOwnsPets} />
         </View>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Volunteer with animals</Text>
-          <Switch
-            value={!!sitter.volunteers}
-            disabled
-            trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.volunteers ? 'white' : '#f4f3f4'}
-          />
+          <Switch value={volunteers} onValueChange={setVolunteers} />
         </View>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Work with animals</Text>
-          <Switch
-            value={!!sitter.worksWith}
-            disabled
-            trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.worksWith ? 'white' : '#f4f3f4'}
-          />
+          <Switch value={worksWith} onValueChange={setWorksWith} />
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.label}>Services Provided</Text>
-        {services.map(service => (
+        {services.length === 0 ? (
+          <Text style={{ color: 'gray', marginTop: 10, marginBottom: 10 }}>No services added yet 🐶</Text>
+        ) : (
+          services.map(service => (
           <View key={service.id} style={styles.serviceCardLarge}>
             <Image
               source={service.imageUri ? { uri: service.imageUri } : defaultServiceImage}
@@ -170,12 +179,16 @@ export default function PetSitterProfileView({ route, navigation }: Props) {
             <View style={styles.serviceInfoLarge}>
               <Text style={styles.serviceTitle}>{service.title}</Text>
               <Text style={styles.serviceType}>{service.type}</Text>
-              <TouchableOpacity onPress={() => handleViewService(service)}>
-                <Text style={styles.moreDetails}>More Details →</Text>
+              <TouchableOpacity onPress={() => handleEditService(service)}>
+                <Text style={styles.moreDetails}>Edit Details →</Text>
               </TouchableOpacity>
             </View>
           </View>
-        ))}
+          ))
+        )}
+        <TouchableOpacity onPress={handleAddService} style={styles.addServiceButton}>
+          <Text style={styles.addServiceText}>+ Add Service</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAwareScrollView>
   );
@@ -274,5 +287,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
+  },  
+  addServiceButton: {
+    marginTop: 10,
+    backgroundColor: '#f5c28b',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  addServiceText: {
+    fontWeight: '600',
+    fontSize: 16,
+    color: 'white',
   },
 });
