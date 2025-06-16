@@ -17,18 +17,18 @@ const defaultServiceImage = require('../assets/petsitter.png');
 
 type Sitter = {
   imageUri?: string | null;
-  aboutMe: string;
-  experience: string;
-  skills: string;
-  ownsPets: boolean;
-  volunteers: boolean;
-  worksWith: boolean;
+  about_me: string;
+  years_of_experience: string;
+  other_pet_related_skills: string;
+  owns_pets: boolean;
+  volunteers_with_pets: boolean;
+  works_with_pets: boolean;
 };
 
 type Service = {
-  id: string;
-  title: string;
-  type: string;
+  id: string,
+  name_of_service: string;
+  type_of_service: string;
   imageUri?: string | null;
 };
 
@@ -43,20 +43,20 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'PetSitterProfileView'>;
 export default function PetSitterProfileView({ route, navigation }: Props) {
   const [sitter, setSitter] = useState<Sitter>(
     route.params?.sitter ?? {
-      aboutMe: '',
-      experience: '',
-      skills: '',
-      ownsPets: false,
-      volunteers: false,
-      worksWith: false,
+      about_me: '',
+      years_of_experience: '',
+      other_pet_related_skills: '',
+      owns_pets: false,
+      volunteers_with_pets: false,
+      works_with_pets: false,
     }
   );
 
   const [services, setServices] = useState<Service[]>([
     {
       id: '1',
-      title: 'New Service',
-      type: 'Dog Walking',
+      name_of_service: 'New Service',
+      type_of_service: 'Dog Walking',
       imageUri: null,
     },
   ]);
@@ -107,7 +107,7 @@ export default function PetSitterProfileView({ route, navigation }: Props) {
       <TextInput
         style={[styles.input, styles.aboutMeInput]}
         multiline
-        value={sitter.aboutMe}
+        value={sitter.about_me}
         editable={false}
       />
 
@@ -115,7 +115,7 @@ export default function PetSitterProfileView({ route, navigation }: Props) {
         <Text style={styles.label}>Years of Experience</Text>
         <TextInput
           style={styles.input}
-          value={sitter.experience}
+          value={sitter.years_of_experience}
           editable={false}
         />
       </View>
@@ -124,7 +124,7 @@ export default function PetSitterProfileView({ route, navigation }: Props) {
         <Text style={styles.label}>Any Other Pet-Related Skills</Text>
         <TextInput
           style={styles.input}
-          value={sitter.skills}
+          value={sitter.other_pet_related_skills}
           editable={false}
         />
       </View>
@@ -133,28 +133,28 @@ export default function PetSitterProfileView({ route, navigation }: Props) {
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Owns pets</Text>
           <Switch
-            value={!!sitter.ownsPets}
+            value={!!sitter.owns_pets}
             disabled
             trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.ownsPets ? 'white' : '#f4f3f4'}
+            thumbColor={sitter.owns_pets ? 'white' : '#f4f3f4'}
           />
         </View>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Volunteer with animals</Text>
           <Switch
-            value={!!sitter.volunteers}
+            value={!!sitter.volunteers_with_pets}
             disabled
             trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.volunteers ? 'white' : '#f4f3f4'}
+            thumbColor={sitter.volunteers_with_pets ? 'white' : '#f4f3f4'}
           />
         </View>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Work with animals</Text>
           <Switch
-            value={!!sitter.worksWith}
+            value={!!sitter.works_with_pets}
             disabled
             trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.worksWith ? 'white' : '#f4f3f4'}
+            thumbColor={sitter.works_with_pets ? 'white' : '#f4f3f4'}
           />
         </View>
       </View>
@@ -168,8 +168,8 @@ export default function PetSitterProfileView({ route, navigation }: Props) {
               style={styles.serviceImageLarge}
             />
             <View style={styles.serviceInfoLarge}>
-              <Text style={styles.serviceTitle}>{service.title}</Text>
-              <Text style={styles.serviceType}>{service.type}</Text>
+              <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
+              <Text style={styles.serviceType}>{service.type_of_service}</Text>
               <TouchableOpacity onPress={() => handleViewService(service)}>
                 <Text style={styles.moreDetails}>More Details →</Text>
               </TouchableOpacity>

@@ -17,12 +17,12 @@ const defaultServiceImage = require('../assets/petsitter.png');
 
 type Sitter = {
   imageUri: string | null;
-  aboutMe: string;
-  experience: string;
-  skills: string;
-  ownsPets: boolean;
-  volunteers: boolean;
-  worksWith: boolean;
+  about_me: string;
+  years_of_experience: string;
+  other_pet_related_skills: string;
+  owns_pets: boolean;
+  volunteers_with_pets: boolean;
+  works_with_pets: boolean;
 };
 
 type Service = {
@@ -44,22 +44,22 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'EditPetSitterProfile'>;
 export default function EditPetSitterProfileScreen({ route, navigation }: Props) {
   const { sitter } = route.params;
 
-  const [aboutMe, setAboutMe] = useState(sitter.aboutMe || '');
-  const [experience, setExperience] = useState(sitter.experience || '');
-  const [skills, setSkills] = useState(sitter.skills || '');
-  const [ownsPets, setOwnsPets] = useState(sitter.ownsPets);
-  const [volunteers, setVolunteers] = useState(sitter.volunteers);
-  const [worksWith, setWorksWith] = useState(sitter.worksWith);
+  const [about_me, set_about_me] = useState(sitter.about_me || '');
+  const [years_of_experience, set_years_of_experience] = useState(sitter.years_of_experience || '');
+  const [other_pet_related_skills, set_other_pet_related_skills] = useState(sitter.other_pet_related_skills || '');
+  const [owns_pets, set_owns_pets] = useState(sitter.owns_pets);
+  const [volunteers_with_pets, set_volunteers_with_pets] = useState(sitter.volunteers_with_pets);
+  const [works_with_pets, set_works_with_pets] = useState(sitter.works_with_pets);
   const [services, setServices] = useState<Service[]>([]);
 
   const onSave = () => {
     console.log({
-      aboutMe,
-      experience,
-      skills,
-      ownsPets,
-      volunteers,
-      worksWith,
+      about_me,
+      years_of_experience,
+      other_pet_related_skills,
+      owns_pets,
+      volunteers_with_pets,
+      works_with_pets,
       services,
     });
     alert('Pet sitter details saved!');
@@ -100,7 +100,7 @@ export default function EditPetSitterProfileScreen({ route, navigation }: Props)
         </TouchableOpacity>
       ),
     });
-  }, [navigation, aboutMe, experience, skills, ownsPets, volunteers, worksWith, services]);
+  }, [navigation, about_me, years_of_experience, other_pet_related_skills, owns_pets, volunteers_with_pets, works_with_pets, services]);
 
   return (
     <KeyboardAwareScrollView
@@ -122,8 +122,8 @@ export default function EditPetSitterProfileScreen({ route, navigation }: Props)
       <TextInput
         style={[styles.input, styles.aboutMeInput]}
         multiline
-        value={aboutMe}
-        onChangeText={setAboutMe}
+        value={about_me}
+        onChangeText={set_about_me}
         placeholder="Tell us about yourself..."
         placeholderTextColor="gray"
       />
@@ -132,8 +132,8 @@ export default function EditPetSitterProfileScreen({ route, navigation }: Props)
         <Text style={styles.label}>Years of Experience</Text>
         <TextInput
           style={styles.input}
-          value={experience}
-          onChangeText={setExperience}
+          value={years_of_experience}
+          onChangeText={set_years_of_experience}
           placeholder="e.g. 2 - 5"
           placeholderTextColor="gray"
         />
@@ -143,8 +143,8 @@ export default function EditPetSitterProfileScreen({ route, navigation }: Props)
         <Text style={styles.label}>Any Other Pet-Related Skills</Text>
         <TextInput
           style={styles.input}
-          value={skills}
-          onChangeText={setSkills}
+          value={other_pet_related_skills}
+          onChangeText={set_other_pet_related_skills}
           placeholder="e.g. Certified in pet first aid"
           placeholderTextColor="gray"
         />
@@ -153,15 +153,15 @@ export default function EditPetSitterProfileScreen({ route, navigation }: Props)
       <View style={styles.section}>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Owns pets</Text>
-          <Switch value={ownsPets} onValueChange={setOwnsPets} />
+          <Switch value={owns_pets} onValueChange={set_owns_pets} />
         </View>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Volunteer with animals</Text>
-          <Switch value={volunteers} onValueChange={setVolunteers} />
+          <Switch value={volunteers_with_pets} onValueChange={set_volunteers_with_pets} />
         </View>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Work with animals</Text>
-          <Switch value={worksWith} onValueChange={setWorksWith} />
+          <Switch value={works_with_pets} onValueChange={set_works_with_pets} />
         </View>
       </View>
 

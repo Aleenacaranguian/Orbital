@@ -45,10 +45,12 @@ export default function EditPetProfile({ route, navigation }: Props) {
   const [saving, setSaving] = useState(false);
 
   const typeOptions = [
-    { label: 'Dog', value: 'dog' },
-    { label: 'Cat', value: 'cat' },
-    { label: 'Rabbit', value: 'rabbit' },
-    { label: 'Bird', value: 'bird' },
+    { label: 'Dog', value: 'Dog' },
+    { label: 'Cat', value: 'Cat' },
+    { label: 'Rabbit', value: 'Rabbit' },
+    { label: 'Bird', value: 'Bird' },
+    { label: 'Reptile', value: 'Reptile'},
+    { label: 'Fish', value: 'Fish'}
   ];
 
   const sizeOptions = [
