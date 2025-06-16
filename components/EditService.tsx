@@ -51,12 +51,16 @@ export default function ViewServiceScreen({ route, navigation }: Props) {
   const [openType, setOpenType] = useState(false);
   const [type, setType] = useState(service.type);
   const typeOptions = [
-    { label: 'House Visit', value: 'House Visit' },
-    { label: 'House Sitting', value: 'House Sitting' },
-    { label: 'Dog Walking', value: 'Dog Walking' },
+    { label: 'House visit', value: 'House visit' },
+    { label: 'House sitting', value: 'House sitting' },
+    { label: 'Dog walking', value: 'Dog walking' },
     { label: 'Daycare', value: 'Daycare' },
     { label: 'Boarding', value: 'Boarding' },
+    { label: 'Grooming', value: 'Grooming'},
+    { label: 'Transport', value: 'Transport'},
+    { label: 'Training', value: 'Training'}
   ];
+
 
   // Service Environment toggles
   const [noOtherDogPresent, setNoOtherDogPresent] = useState(service.noOtherDogPresent || false);
@@ -173,12 +177,12 @@ export default function ViewServiceScreen({ route, navigation }: Props) {
             />
           </View>
 
-          <Text style={styles.label}>Rate per Hour</Text>
+          <Text style={styles.label}>Rate per Hour/Night</Text>
           <TextInput
             style={styles.input}
             value={ratePerHour}
             onChangeText={setRatePerHour}
-            placeholder="Rate per Hour"
+            placeholder="Rate per Hour/Night"
             keyboardType="numeric"
           />
 

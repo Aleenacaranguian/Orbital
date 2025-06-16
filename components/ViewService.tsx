@@ -11,20 +11,20 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 type Service = {
   id: string;
-  title: string;
-  type: string;
+  name_of_service: string;
+  service_type: string;
   imageUri?: string | null;
-  ratePerHour?: string;
-  petPreferences?: string;
-  housingType?: string;
-  details?: string;
-  noOtherDogPresent?: boolean;
-  noOtherCatsPresent?: boolean;
-  noChildren?: boolean;
-  noAdults?: boolean;
-  sitterPresentThroughout?: boolean;
-  acceptsUnsterilisedPets?: boolean;
-  acceptsTransmissiblePets?: boolean;
+  price?: string;
+  pet_preferences?: string;
+  housing_type?: string;
+  service_details?: string;
+  no_other_dogs_present?: boolean;
+  no_other_cats_present?: boolean;
+  no_children_present?: boolean;
+  no_adults_present?: boolean;
+  sitter_present_throughout_service?: boolean;
+  accepts_unsterilised_pets?: boolean;
+  accepts_transmissible_pets?: boolean;
 };
 
 type HomeStackParamList = {
@@ -54,38 +54,38 @@ export default function ViewServiceScreen({ route }: Props) {
       />
 
       <View style={styles.bigCard}>
-        <Text style={styles.serviceName}>{service.title || 'Untitled Service'}</Text>
+        <Text style={styles.serviceName}>{service.name_of_service || 'Untitled Service'}</Text>
 
         <Text style={styles.label}>Service Type</Text>
         <View style={styles.readOnlyField}>
-          <Text>{service.type || ''}</Text>
+          <Text>{service.service_type || ''}</Text>
         </View>
 
-        <Text style={styles.label}>Rate per Hour</Text>
+        <Text style={styles.label}>Rate per Hour/Night</Text>
         <View style={styles.readOnlyField}>
-          <Text>{service.ratePerHour || ''}</Text>
+          <Text>{service.price || ''}</Text>
         </View>
 
         <Text style={styles.label}>Pet Preferences</Text>
         <View style={styles.readOnlyField}>
-          <Text>{service.petPreferences || ''}</Text>
+          <Text>{service.pet_preferences || ''}</Text>
         </View>
 
         <Text style={styles.label}>Service Details</Text>
         <View style={styles.readOnlyFieldLarge}>
-          <Text>{service.details || ''}</Text>
+          <Text>{service.service_details || ''}</Text>
         </View>
 
         {/* Subcard for Service Environment */}
         <Text style={styles.label}>Service Environment</Text>
         <View style={styles.subCard}>
-          {renderToggle('No other dog present', service.noOtherDogPresent)}
-          {renderToggle('No other cats present', service.noOtherCatsPresent)}
-          {renderToggle('No children', service.noChildren)}
-          {renderToggle('No adults', service.noAdults)}
-          {renderToggle('Sitter present throughout', service.sitterPresentThroughout)}
-          {renderToggle('Accepts unsterilised pets', service.acceptsUnsterilisedPets)}
-          {renderToggle('Accepts transmissible health issues', service.acceptsTransmissiblePets)}
+          {renderToggle('No other dog present', service.no_other_dogs_present)}
+          {renderToggle('No other cats present', service.no_other_cats_present)}
+          {renderToggle('No children', service.no_children_present)}
+          {renderToggle('No adults', service.no_adults_present)}
+          {renderToggle('Sitter present throughout', service.sitter_present_throughout_service)}
+          {renderToggle('Accepts unsterilised pets', service.accepts_unsterilised_pets)}
+          {renderToggle('Accepts transmissible health issues', service.accepts_transmissible_pets)}
         </View>
 
         <Text style={styles.label}>Housing Type</Text>
@@ -94,10 +94,10 @@ export default function ViewServiceScreen({ route }: Props) {
             <View style={styles.toggleRow} key={ht}>
               <Text style={styles.toggleLabel}>{ht}</Text>
               <Switch
-                value={service.housingType === ht}
+                value={service.housing_type === ht}
                 disabled
                 trackColor={{ false: '#ccc', true: '#4CAF50' }}
-                thumbColor={service.housingType === ht ? 'white' : '#f4f3f4'}
+                thumbColor={service.housing_type === ht ? 'white' : '#f4f3f4'}
               />
             </View>
           ))}
