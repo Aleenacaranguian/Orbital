@@ -12,14 +12,17 @@ import {
   RefreshControl
 } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import EditProfile from '../components/EditProfile';
 import MyPets from '../components/MyPets';
 import MyPetSitterProfile from '../components/MyPetSitterProfile';
+import EditPetSitterProfile from '../components/EditPetSitterProfile';
 import MyPosts from '../components/MyPosts';
 import ViewPetProfile from '../components/ViewPetProfile';
 import EditPetProfile from '../components/EditPetProfile';
+import ViewServiceScreen from '../components/ViewService'; // Add this import
+import EditServiceScreen from '../components/EditService'; // Add this import
 
 // Define the Pet type to match your Supabase table
 export type Pet = {
@@ -36,21 +39,57 @@ export type Pet = {
   pet_url?: string | null; // Store the storage path, not full URL
 };
 
-// Navigation types
+// Define Sitter type to match your pet sitter components
+export type Sitter = {
+  id?: string;
+  imageUri?: string | null;
+  about_me: string;
+  years_of_experience: string;
+  other_pet_related_skills: string;
+  owns_pets: boolean;
+  volunteers_with_animals: boolean;
+  works_with_animals: boolean;
+  average_stars?: number;
+  username?: string;
+};
+
+// Define Service type - Updated to match the service screens
+export type Service = {
+  id: string;
+  service_type: string;
+  service_url?: string | null;
+  created_at?: string;
+  name_of_service?: string;
+  price?: string;
+  pet_preferences?: string;
+  housing_type?: string;
+  service_details?: string;
+  no_other_dogs_present?: boolean;
+  no_other_cats_present?: boolean;
+  no_children_present?: boolean;
+  no_adults_present?: boolean;
+  sitter_present_throughout_service?: boolean;
+  accepts_unsterilised_pets?: boolean;
+  accepts_transmissible_pets?: boolean;
+};
+
+// Navigation types - Updated to remove the function parameter
 export type HomeStackParamList = {
-  ProfileScreen: undefined;
+  ProfileScreen: { updatedService?: Service; timestamp?: number } | undefined;
   EditProfile: undefined;
   MyPets: undefined;
   ViewPetProfile: { pet: Pet };
   EditPetProfile: { pet: Pet };
-  MyPetSitterProfile: undefined;
+  PetSitterProfileView: undefined;
+  EditPetSitterProfile: { sitter: Sitter };
+  ViewService: { service: Service };
+  EditService: { service: Service }; // Removed onSave function
   MyPosts: undefined;
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
-function ProfileScreen() {
-  const navigation = useNavigation<any>();
+function ProfileScreen({ route, navigation }: { route: any; navigation: any }) {
   const [profile, setProfile] = useState<{
     username: string;
     avatar_url: string | null;
@@ -85,6 +124,22 @@ function ProfileScreen() {
     setRefreshing(true);
     fetchProfile();
   };
+
+  // Handle service updates from EditService screen
+  useFocusEffect(
+    React.useCallback(() => {
+      if (route.params?.updatedService) {
+        // Handle the updated service here
+        console.log('Service updated:', route.params.updatedService);
+        
+        // If you need to refresh any service-related data on this screen, do it here
+        // For example, if you're showing services in the profile, you might want to refetch them
+        
+        // Clear the params to prevent re-processing
+        navigation.setParams({ updatedService: undefined, timestamp: undefined });
+      }
+    }, [route.params?.updatedService, route.params?.timestamp, navigation])
+  );
 
   useEffect(() => {
     fetchProfile();
@@ -166,7 +221,7 @@ function ProfileScreen() {
 
         <TouchableOpacity 
           style={styles.row} 
-          onPress={() => navigation.navigate('MyPetSitterProfile')}
+          onPress={() => navigation.navigate('PetSitterProfileView')}
         >
           <Image source={require('../assets/petsitter.png')} style={styles.icon} />
           <Text style={styles.text}>My Pet Sitter Profile</Text>
@@ -227,9 +282,24 @@ export default function Home() {
         options={{ title: 'Edit Pet' }} 
       />
       <Stack.Screen 
-        name="MyPetSitterProfile" 
+        name="PetSitterProfileView" 
         component={MyPetSitterProfile} 
         options={{ title: 'My Pet Sitter Profile' }} 
+      />
+      <Stack.Screen 
+        name="EditPetSitterProfile" 
+        component={EditPetSitterProfile} 
+        options={{ title: 'Edit Pet Sitter Profile' }} 
+      />
+      <Stack.Screen 
+        name="ViewService" 
+        component={ViewServiceScreen} 
+        options={{ title: 'Service Details' }} 
+      />
+      <Stack.Screen 
+        name="EditService" 
+        component={EditServiceScreen} 
+        options={{ title: 'Edit Service' }} 
       />
       <Stack.Screen 
         name="MyPosts" 
