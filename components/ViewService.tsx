@@ -1,4 +1,4 @@
-//viewservice.tsx
+// viewservice.tsx - Updated Props type
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -13,24 +13,15 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 
-type Service = {
-  id: string;
-  service_type: string;
-  service_url?: string | null;
-  created_at?: string;
-  name_of_service?: string;
-  price?: string;
-  pet_preferences?: string;
-  housing_type?: string;
-  service_details?: string;
-  accepts_pets_with_transmissible_health_issues?: boolean;
-  accepts_unsterilised_pets?: boolean;
-  sitter_present_throughout_service?: boolean;
-  no_adults_present?: boolean;
-  no_children_present?: boolean;
-  no_other_dogs_present?: boolean;
-  no_other_cats_present?: boolean;
-};
+// Import the HomeStackParamList from Home.tsx
+import { HomeStackParamList } from './Home'; // Adjust the import path as needed
+
+// Use the imported type instead of redefining it
+type Props = NativeStackScreenProps<HomeStackParamList, 'ViewService'>;
+
+// Remove the local Service type definition since it's already defined in Home.tsx
+// Import Service type from Home.tsx instead
+import { Service } from './Home'; // Adjust the import path as needed
 
 type PetSitter = {
   id: string;
@@ -47,13 +38,7 @@ type PetSitter = {
   };
 };
 
-type HomeStackParamList = {
-  ViewService: { service: Service };
-};
-
-type Props = NativeStackScreenProps<HomeStackParamList, 'ViewService'>;
-
-const defaultServiceImage = require('../assets/petsitter.png'); // Ensure this path is correct
+const defaultServiceImage = require('../assets/petsitter.png');
 
 const housingTypes = [
   'Apartment',
@@ -63,12 +48,15 @@ const housingTypes = [
   'NA',
 ];
 
+const petTypes = ['Dog', 'Cat', 'Rabbit', 'Bird', 'Reptile', 'Fish'];
+
 export default function ViewServiceScreen({ route }: Props) {
   const { service } = route.params;
   const [petSitter, setPetSitter] = useState<PetSitter | null>(null);
   const [serviceImageUrl, setServiceImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Rest of your component remains the same...
   useEffect(() => {
     fetchServiceDetails();
   }, []);
@@ -77,7 +65,6 @@ export default function ViewServiceScreen({ route }: Props) {
     try {
       setLoading(true);
 
-      // Fetch pet sitter details with profile info
       const { data: sitterData, error: sitterError } = await supabase
         .from('pet_sitter')
         .select(
@@ -100,7 +87,6 @@ export default function ViewServiceScreen({ route }: Props) {
         setPetSitter(sitterData as PetSitter);
       }
 
-      // Get service image URL if service_url exists
       if (service.service_url) {
         const { data: imageData } = supabase.storage
           .from('services')
@@ -144,7 +130,7 @@ export default function ViewServiceScreen({ route }: Props) {
               source={
                 petSitter.profiles.avatar_url
                   ? { uri: petSitter.profiles.avatar_url }
-                  : require('../assets/default-profile.png') // Ensure this path is correct
+                  : require('../assets/default-profile.png')
               }
               style={styles.sitterAvatar}
             />
@@ -164,6 +150,11 @@ export default function ViewServiceScreen({ route }: Props) {
         <Text style={styles.label}>Service Type</Text>
         <View style={styles.readOnlyField}>
           <Text>{service.service_type || ''}</Text>
+        </View>
+
+        <Text style={styles.label}>Pet Type</Text>
+        <View style={styles.readOnlyField}>
+          <Text>{service.pet_type || 'Not specified'}</Text>
         </View>
 
         <Text style={styles.label}>Rate per Hour/Night</Text>
@@ -190,7 +181,6 @@ export default function ViewServiceScreen({ route }: Props) {
 
             <Text style={styles.label}>Experience & Skills</Text>
             <View style={styles.subCard}>
-              {/* Using a consistent style for these details */}
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>Years of Experience:</Text>
                 <Text style={styles.toggleValue}>{petSitter.years_of_experience || 'Not specified'}</Text>
@@ -208,7 +198,6 @@ export default function ViewServiceScreen({ route }: Props) {
           </>
         )}
 
-        {/* Service Environment */}
         <Text style={styles.label}>Service Environment</Text>
         <View style={styles.subCard}>
           {renderToggle('No other dogs present', service.no_other_dogs_present)}
@@ -253,7 +242,6 @@ function renderToggle(label: string, value: boolean | undefined) {
   );
 }
 
-// New helper function for consistent 'Yes'/'No' display with a switch-like visual
 function renderToggleWithText(label: string, value: boolean | undefined) {
   return (
     <View style={styles.toggleRow} key={label}>
@@ -308,7 +296,7 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginBottom: 8,
-    backgroundColor: '#ddd', // Placeholder background
+    backgroundColor: '#ddd',
   },
   sitterName: {
     fontSize: 18,
@@ -332,7 +320,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     justifyContent: 'center',
-    marginBottom: 8, // Added for consistent spacing
+    marginBottom: 8,
   },
   readOnlyFieldLarge: {
     backgroundColor: '#f2f2f2',
@@ -340,13 +328,13 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 80,
     justifyContent: 'center',
-    marginBottom: 8, // Added for consistent spacing
+    marginBottom: 8,
   },
   subCard: {
     backgroundColor: '#fef5ec',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 10, // Added for spacing between subcards/sections
+    marginBottom: 10,
   },
   toggleRow: {
     flexDirection: 'row',
@@ -375,10 +363,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  readOnlySubField: { // For "Other Skills" within the subCard
-    backgroundColor: '#f2f2f2', // Lighter background for consistency
+  readOnlySubField: {
+    backgroundColor: '#f2f2f2',
     borderRadius: 8,
     padding: 12,
-    marginTop: 8, // Spacing from previous items in subcard
+    marginTop: 8,
   },
 });

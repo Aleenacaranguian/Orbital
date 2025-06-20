@@ -32,15 +32,22 @@ type Sitter = {
   username?: string;
 };
 
+// Define allowed pet types to match home.tsx
+type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
+
+// Updated Service type to match the new table structure
 type Service = {
-  id: string;
-  name_of_service: string; // Changed to use name_of_service as primary display
+  service_id: string; // New primary key (UUID)
+  id: string; // Foreign key referencing user
+  name_of_service: string;
   service_type: string;
   service_url?: string | null;
   created_at?: string;
   price?: string;
   pet_preferences?: string;
+  pet_type?: PetType | null; // Updated to use the specific pet types
   housing_type?: string;
+  service_details?: string;
   accepts_pets_with_transmissible_health_issues?: boolean;
   accepts_unsterilised_pets?: boolean;
   sitter_present_throughout_service?: boolean;
@@ -118,10 +125,11 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
         });
       }
 
-      // Fetch services with all required fields
+      // Fetch services with all required fields including service_id and pet_type
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select(`
+          service_id,
           id,
           name_of_service,
           service_type,
@@ -129,7 +137,9 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
           created_at,
           price,
           pet_preferences,
+          pet_type,
           housing_type,
+          service_details,
           accepts_pets_with_transmissible_health_issues,
           accepts_unsterilised_pets,
           sitter_present_throughout_service,
@@ -328,7 +338,7 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
           <Text style={{ color: 'gray', marginTop: 10, marginBottom: 10 }}>No services added yet 🐶</Text>
         ) : (
           services.map(service => (
-            <View key={`${service.id}-${service.name_of_service}`} style={styles.serviceCardLarge}>
+            <View key={service.service_id} style={styles.serviceCardLarge}>
               <Image
                 source={getServiceImageUri(service)}
                 style={styles.serviceImageLarge}
@@ -336,6 +346,9 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
               <View style={styles.serviceInfoLarge}>
                 <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
                 <Text style={styles.serviceType}>{service.service_type}</Text>
+                {service.pet_type && (
+                  <Text style={styles.petType}>For: {service.pet_type}</Text>
+                )}
                 <TouchableOpacity onPress={() => handleViewService(service)}>
                   <Text style={styles.moreDetails}>More Details →</Text>
                 </TouchableOpacity>
@@ -436,6 +449,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginVertical: 4,
+  },
+  petType: {
+    fontSize: 14,
+    color: '#8B0000',
+    fontWeight: '500',
+    marginBottom: 4,
   },
   moreDetails: {
     fontSize: 16,

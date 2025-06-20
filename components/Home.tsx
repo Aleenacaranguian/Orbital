@@ -53,15 +53,20 @@ export type Sitter = {
   username?: string;
 };
 
-// Define Service type - Updated to match the service screens
+// Define allowed pet types
+export type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
+
+// Define Service type - Updated to match the new table structure
 export type Service = {
-  id: string;
+  service_id: string; // New primary key (UUID)
+  id: string; // Foreign key referencing user
   service_type: string;
   service_url?: string | null;
   created_at?: string;
   name_of_service?: string;
   price?: string;
   pet_preferences?: string;
+  pet_type?: PetType | null; // Updated to use the specific pet types
   housing_type?: string;
   service_details?: string;
   no_other_dogs_present?: boolean;
@@ -70,8 +75,11 @@ export type Service = {
   no_adults_present?: boolean;
   sitter_present_throughout_service?: boolean;
   accepts_unsterilised_pets?: boolean;
-  accepts_transmissible_pets?: boolean;
+  accepts_pets_with_transmissible_health_issues?: boolean;
 };
+
+// Export the pet type options for use in other components
+export const PET_TYPE_OPTIONS: PetType[] = ['Dog', 'Cat', 'Rabbit', 'Bird', 'Reptile', 'Fish'];
 
 // Navigation types - Updated to remove the function parameter
 export type HomeStackParamList = {
