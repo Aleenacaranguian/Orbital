@@ -17,15 +17,18 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
 
+type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
+
 type Service = {
-  id: string;
+  service_id: string; // New primary key (UUID)
+  id: string; // Foreign key referencing user
   service_type: string;
   service_url?: string | null;
   created_at?: string;
-  // Extended fields for the UI
   name_of_service?: string;
   price?: string;
   pet_preferences?: string;
+  pet_type?: PetType | null; // New field
   housing_type?: string;
   service_details?: string;
   accepts_pets_with_transmissible_health_issues?: boolean;
@@ -72,6 +75,18 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     { label: 'Grooming', value: 'Grooming' },
     { label: 'Transport', value: 'Transport' },
     { label: 'Training', value: 'Training' }
+  ];
+
+  // Pet Type dropdown
+  const [openPetType, setOpenPetType] = useState(false);
+  const [petType, setPetType] = useState<PetType | null>(service.pet_type || null);
+  const petTypeOptions = [
+    { label: 'Dog', value: 'Dog' },
+    { label: 'Cat', value: 'Cat' },
+    { label: 'Rabbit', value: 'Rabbit' },
+    { label: 'Bird', value: 'Bird' },
+    { label: 'Reptile', value: 'Reptile' },
+    { label: 'Fish', value: 'Fish' }
   ];
 
   // Service Environment toggles - fixed field names to match database schema
@@ -144,15 +159,15 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
-
-      // Create file name - using service id and name_of_service for uniqueness
+  
+      // Create file name - using service_id instead of id
       const fileExt = imageUri.split('.').pop();
-      const fileName = `${service.id}_${nameOfService || 'service'}_${Date.now()}.${fileExt}`;
-
-      // Convert uri to blob for upload
+      const fileName = `${service.service_id}_${nameOfService || 'service'}_${Date.now()}.${fileExt}`;
+  
+      // Convert uri to blob for upload (your original approach was correct)
       const response = await fetch(imageUri);
       const blob = await response.blob();
-
+  
       // Upload to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('services')
@@ -160,18 +175,23 @@ export default function EditServiceScreen({ route, navigation }: Props) {
           cacheControl: '3600',
           upsert: true
         });
-
-      if (uploadError) throw uploadError;
-
-      // FIXED: Update service record with both id and name_of_service
+  
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
+  
+      // Update service record using service_id as primary key
       const { error: updateError } = await supabase
         .from('services')
         .update({ service_url: fileName })
-        .eq('id', service.id)
-        .eq('name_of_service', service.name_of_service);
-
-      if (updateError) throw updateError;
-
+        .eq('service_id', service.service_id);
+  
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        throw updateError;
+      }
+  
       // Update local state
       const { data: imageData } = supabase.storage
         .from('services')
@@ -180,11 +200,13 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       setServiceImageUrl(imageData.publicUrl);
       
       Alert.alert('Success', 'Service image updated successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      Alert.alert('Error', 'Failed to upload image');
+      Alert.alert('Error', `Failed to upload image: ${error?.message || 'Unknown error'}`);
     }
   };
+
+  
 
   const saveService = async () => {
     try {
@@ -203,6 +225,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
           service_type: serviceType,
           price: price,
           pet_preferences: petPreferences,
+          pet_type: petType,
           housing_type: housingType,
           service_details: serviceDetails,
           accepts_pets_with_transmissible_health_issues: acceptsTransmissiblePets,
@@ -213,8 +236,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
           no_other_dogs_present: noOtherDogsPresent,
           no_other_cats_present: noOtherCatsPresent,
         })
-        .eq('id', service.id)
-        .eq('name_of_service', service.name_of_service);
+        .eq('service_id', service.service_id); // Use service_id as primary key
   
       if (error) throw error;
   
@@ -225,6 +247,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
         name_of_service: nameOfService.trim(),
         price,
         pet_preferences: petPreferences,
+        pet_type: petType,
         housing_type: housingType,
         service_details: serviceDetails,
         no_other_dogs_present: noOtherDogsPresent,
@@ -254,6 +277,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       setLoading(false);
     }
   };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -277,6 +301,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     serviceType,
     price,
     petPreferences,
+    petType,
     noOtherDogsPresent,
     noOtherCatsPresent,
     noChildren,
@@ -335,6 +360,27 @@ export default function EditServiceScreen({ route, navigation }: Props) {
               dropDownDirection="BOTTOM"
               textStyle={{
                 color: serviceType ? 'black' : 'gray',
+                fontSize: 16,
+              }}
+            />
+          </View>
+
+          <Text style={styles.label}>Pet Type</Text>
+          <View style={{ zIndex: 4000 }}>
+            <DropDownPicker
+              open={openPetType}
+              value={petType}
+              items={petTypeOptions}
+              setOpen={setOpenPetType}
+              setValue={setPetType}
+              placeholder="Select Pet Type"
+              placeholderStyle={{ color: 'gray' }}
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownContainer}
+              listMode="SCROLLVIEW"
+              dropDownDirection="BOTTOM"
+              textStyle={{
+                color: petType ? 'black' : 'gray',
                 fontSize: 16,
               }}
             />

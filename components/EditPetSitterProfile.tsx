@@ -1,4 +1,3 @@
-//editpetsitterprofile.tsx 
 import React, { useState, useLayoutEffect, useEffect } from 'react';
 import {
   View,
@@ -32,14 +31,18 @@ type Sitter = {
   username?: string;
 };
 
+export type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
+
 type Service = {
+  service_id: string;
   id: string;
-  name_of_service: string; // Changed to use name_of_service as primary display
+  name_of_service: string;
   service_type: string;
   service_url?: string | null;
   created_at?: string;
   price?: string;
   pet_preferences?: string;
+  pet_type?: PetType | null;
   housing_type?: string;
   accepts_pets_with_transmissible_health_issues?: boolean;
   accepts_unsterilised_pets?: boolean;
@@ -99,10 +102,10 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Fetch services with all required fields
         const { data: servicesData, error: servicesError } = await supabase
           .from('services')
           .select(`
+            service_id,
             id,
             name_of_service,
             service_type,
@@ -110,6 +113,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
             created_at,
             price,
             pet_preferences,
+            pet_type,
             housing_type,
             accepts_pets_with_transmissible_health_issues,
             accepts_unsterilised_pets,
@@ -148,7 +152,6 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
         return;
       }
 
-      // Check if pet sitter profile exists
       const { data: existingData, error: checkError } = await supabase
         .from('pet_sitter')
         .select('id')
@@ -165,20 +168,18 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
       };
 
       if (checkError && checkError.code === 'PGRST116') {
-        // Profile doesn't exist, create it
         const { error: insertError } = await supabase
           .from('pet_sitter')
           .insert([{
             id: user.id,
             ...petSitterData,
-            average_stars: 0, // Default value
+            average_stars: 0,
           }]);
 
         if (insertError) {
           throw insertError;
         }
       } else if (!checkError) {
-        // Profile exists, update it
         const { error: updateError } = await supabase
           .from('pet_sitter')
           .update(petSitterData)
@@ -210,7 +211,6 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
         return;
       }
   
-      // First ensure pet sitter profile exists
       const { data: sitterExists } = await supabase
         .from('pet_sitter')
         .select('id')
@@ -222,7 +222,6 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
         return;
       }
   
-      // Generate a unique name_of_service since it's part of the composite primary key
       const timestamp = Date.now();
       const serviceName = `Service_${timestamp}`;
   
@@ -235,6 +234,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
           service_url: null,
           price: '',
           pet_preferences: '',
+          pet_type: null,
           housing_type: 'NA',
           accepts_pets_with_transmissible_health_issues: false,
           accepts_unsterilised_pets: false,
@@ -245,6 +245,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
           no_other_dogs_present: false,
         }])
         .select(`
+          service_id,
           id,
           name_of_service,
           service_type,
@@ -252,6 +253,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
           created_at,
           price,
           pet_preferences,
+          pet_type,
           housing_type,
           accepts_pets_with_transmissible_health_issues,
           accepts_unsterilised_pets,
@@ -279,6 +281,42 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
     navigation.navigate('EditService', {
       service
     });
+  };
+
+  const handleDeleteService = (service: Service) => {
+    Alert.alert(
+      `Delete ${service.name_of_service}`,
+      'Are you sure you want to delete this service? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const { error } = await supabase
+                .from('services')
+                .delete()
+                .eq('service_id', service.service_id);
+
+              if (error) throw error;
+
+              setServices(prev => prev.filter(s => s.service_id !== service.service_id));
+              Alert.alert('Success', 'Service deleted successfully!');
+            } catch (error) {
+              console.error('Error deleting service:', error);
+              Alert.alert('Error', 'Failed to delete service. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const getServiceImageUri = (service: Service) => {
@@ -378,11 +416,18 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
 
       <View style={styles.section}>
         <Text style={styles.label}>Services Provided</Text>
+        <Text style={styles.instructionText}>Tap to edit • Long press to delete</Text>
         {services.length === 0 ? (
-          <Text style={{ color: 'gray', marginTop: 10, marginBottom: 10 }}>No services added yet 🐶</Text>
+          <Text style={styles.noServicesText}>No services added yet 🐶</Text>
         ) : (
           services.map(service => (
-            <View key={`${service.id}-${service.name_of_service}`} style={styles.serviceCardLarge}>
+            <TouchableOpacity
+              key={service.service_id}
+              style={styles.serviceCardLarge}
+              onPress={() => handleEditService(service)}
+              onLongPress={() => handleDeleteService(service)}
+              delayLongPress={500}
+            >
               <Image
                 source={getServiceImageUri(service)}
                 style={styles.serviceImageLarge}
@@ -390,11 +435,15 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
               <View style={styles.serviceInfoLarge}>
                 <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
                 <Text style={styles.serviceType}>{service.service_type}</Text>
-                <TouchableOpacity onPress={() => handleEditService(service)}>
+                {service.pet_type && (
+                  <Text style={styles.petType}>Pet Type: {service.pet_type}</Text>
+                )}
+                <View style={styles.actionTextContainer}>
                   <Text style={styles.moreDetails}>Edit Details →</Text>
-                </TouchableOpacity>
+                  <Text style={styles.longPressHint}>Long press to edit</Text>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
         <TouchableOpacity onPress={handleAddService} style={styles.addServiceButton}>
@@ -442,6 +491,18 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#844d3e',
   },
+  instructionText: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+    marginBottom: 10,
+  },
+  noServicesText: {
+    color: 'gray',
+    marginTop: 10,
+    marginBottom: 10,
+    fontSize: 14,
+  },
   input: {
     backgroundColor: '#fff',
     padding: 12,
@@ -469,19 +530,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     marginBottom: 16,
-    height: 150,
+    height: 170,
   },
   serviceImageLarge: {
     width: 150,
-    height: 120,
+    height: 140,
     borderRadius: 12,
-    margin: 12,
+    margin: 15,
     backgroundColor: '#eee',
     resizeMode: 'cover',
   },
   serviceInfoLarge: {
     flex: 1,
-    padding: 12,
+    padding: 15,
     justifyContent: 'space-between',
   },
   serviceTitle: {
@@ -494,11 +555,25 @@ const styles = StyleSheet.create({
     color: 'black',
     marginVertical: 4,
   },
+  petType: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  actionTextContainer: {
+    alignItems: 'flex-start',
+  },
   moreDetails: {
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
-  },  
+    marginBottom: 2,
+  },
+  longPressHint: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
   addServiceButton: {
     marginTop: 10,
     backgroundColor: '#f5c28b',
