@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import {
@@ -11,17 +12,43 @@ import {
   StyleSheet,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import SearchResults from './SearchResults';
+import ViewServiceAsOwner from './ViewServiceAsOwner';
 
-type RootStackParamList = {
+// Define the Service type to match your other components
+type Service = {
+  id: string;
+  title: string;
+  type: string;
+  imageUri?: string | null;
+  ratePerHour?: string;
+  petPreferences?: string;
+  housingType?: string;
+  details?: string;
+  noOtherDogPresent?: boolean;
+  noOtherCatsPresent?: boolean;
+  noChildren?: boolean;
+  noAdults?: boolean;
+  sitterPresentThroughout?: boolean;
+  acceptsUnsterilisedPets?: boolean;
+  acceptsTransmissiblePets?: boolean;
+};
+
+// Navigation types for the Search stack
+export type SearchStackParamList = {
+  SearchScreen: undefined;
   SearchResults: {
     selectedPetIds: string[];
     selectedService: string | null;
     fromDate: string;
     toDate: string;
   };
+  ViewServiceAsOwner: { service: Service };
 };
 
-type SearchScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SearchResults'>;
+const Stack = createNativeStackNavigator<SearchStackParamList>();
+
+type SearchScreenNavigationProp = StackNavigationProp<SearchStackParamList, 'SearchResults'>;
 
 const petAvatars = [
   { id: '1', source: require('../assets/default-profile.png') },
@@ -31,7 +58,7 @@ const petAvatars = [
 
 const serviceTypes = ['House Visit', 'House Sitting', 'Dog Walking', 'Daycare', 'Boarding', 'Grooming', 'Training', 'Transport'];
 
-export default function SearchScreen() {
+function SearchScreen() {
   const navigation = useNavigation<SearchScreenNavigationProp>();
   const { height } = useWindowDimensions();
 
@@ -115,7 +142,7 @@ export default function SearchScreen() {
           <Text style={styles.helperText}>From</Text>
           <TouchableOpacity onPress={() => setShowFromPicker(true)}>
             <Text style={styles.dateText}>
-              {fromDate.toLocaleDateString()} 
+              {fromDate.toLocaleDateString()} 
               {fromDate.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -137,7 +164,7 @@ export default function SearchScreen() {
           <Text style={styles.helperText}>To</Text>
           <TouchableOpacity onPress={() => setShowToPicker(true)}>
             <Text style={styles.dateText}>
-              {toDate.toLocaleDateString()} 
+              {toDate.toLocaleDateString()} 
               {toDate.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -158,6 +185,29 @@ export default function SearchScreen() {
         </ScrollView>
       </View>
     </View>
+  );
+}
+
+// Main Search component with Stack Navigator (like your Home component)
+export default function Search() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="SearchScreen" 
+        component={SearchScreen} 
+        options={{ headerShown: false }} 
+      />
+      <Stack.Screen 
+        name="SearchResults" 
+        component={SearchResults} 
+        options={{ title: 'Search Results' }} 
+      />
+      <Stack.Screen 
+        name="ViewServiceAsOwner" 
+        component={ViewServiceAsOwner} 
+        options={{ title: 'View Service' }} 
+      />
+    </Stack.Navigator>
   );
 }
 
