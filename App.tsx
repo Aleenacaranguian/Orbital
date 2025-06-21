@@ -9,36 +9,12 @@ import Home from './components/Home'
 import Search from './components/Search'
 import Messaging from './components/Messaging'
 import Community from './components/Community'
-import EditProfile from './components/EditProfile'
-import MyPets from './components/MyPets'
-import ViewPetProfile from './components/ViewPetProfile'
-import EditPetProfile from './components/EditPetProfile'
-import MyPetSitterProfile from './components/MyPetSitterProfile'
-import EditPetSitterProfile from './components/EditPetSitterProfile'
-import ViewService from './components/ViewService'
-import EditService from './components/EditService'
-import MyPosts from './components/MyPosts'
 import { Ionicons } from '@expo/vector-icons'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
 
-function HomeStack() {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen name="HomeMain" component={Home} options={{ headerShown: false }} />
-      <Stack.Screen name="EditProfile" component={EditProfile} options={{ title: 'Edit Profile' }} />
-      <Stack.Screen name="MyPets" component={MyPets} options={{ title: 'My Pets' }} />
-      <Stack.Screen name="ViewPetProfile" component={ViewPetProfile} options={{ title: 'View Pet Profile' }} />
-      <Stack.Screen name="EditPetProfile" component={EditPetProfile} options={{ title: 'Edit Pet Profile' }} />
-      <Stack.Screen name="MyPetSitterProfile" component={MyPetSitterProfile} options={{ title: 'Pet Sitter Profile' }} />
-      <Stack.Screen name="EditPetSitterProfile" component={EditPetSitterProfile} options={{ title: 'Edit Pet Sitter Profile' }} />
-      <Stack.Screen name="ViewService" component={ViewService} options={{ title: 'View Service' }} />
-      <Stack.Screen name="EditService" component={EditService} options={{ title: 'Edit Service' }} />
-      <Stack.Screen name="MyPosts" component={MyPosts} options={{ title: 'My Posts' }} />
-    </Stack.Navigator>
-  )
-}
+
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -69,18 +45,17 @@ export default function App() {
               Messaging: 'chatbubble-outline',
               Community: 'heart-outline',
             }
-            
+
             const iconName = iconMap[route.name] || 'help-circle-outline'
-            
+
             return <Ionicons name={iconName} size={size} color={color} />
-            
           },
           tabBarActiveTintColor: '#000',
           tabBarInactiveTintColor: 'gray',
-          headerShown: false, // hide tab headers (stack headers still show)
+          headerShown: false,
         })}
       >
-        <Tab.Screen name="Home" component={HomeStack} />
+        <Tab.Screen name="Home" component={Home} />
         <Tab.Screen name="Search" component={Search} />
         <Tab.Screen name="Messaging" component={Messaging} />
         <Tab.Screen name="Community" component={Community} />
