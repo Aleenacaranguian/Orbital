@@ -59,8 +59,7 @@ export default function MessageSitterScreen() {
             <Text style={styles.chatText}>{item}</Text>
           </View>
         )}
-        inverted
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}
+        contentContainerStyle={{ paddingBottom: 20 }}
       />
 
       {/* Message input */}
