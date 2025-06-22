@@ -457,8 +457,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   moreDetails: {
-    fontSize: 16,
-    color: '#007AFF',
+    backgroundColor: '#f5c28b',
+    color: 'black',
+    fontSize: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
     fontWeight: '600',
   },
 });

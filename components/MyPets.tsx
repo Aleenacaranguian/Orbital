@@ -360,17 +360,17 @@ export default function MyPets() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
+    paddingTop: 30,
     paddingHorizontal: 20,
     backgroundColor: '#fef5ec',
     flex: 1,
   },
   header: {
-    fontSize: 35,
-    fontWeight: '600',
-    alignSelf: 'center',
-    marginBottom: 40,
+    fontSize: 40,
+    fontWeight: 'bold',
+    marginBottom: 30,
     color: '#844d3e',
+    textAlign: 'center',
   },
   listContainer: {
     paddingBottom: 20,

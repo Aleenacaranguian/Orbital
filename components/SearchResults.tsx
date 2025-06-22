@@ -266,7 +266,6 @@ const styles = StyleSheet.create({
   resultsCard: {
     width: '100%',
     backgroundColor: 'white',
-    borderRadius: 16,
     paddingHorizontal: 20,
     paddingTop: 20,
     shadowColor: '#000',
@@ -274,7 +273,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
     elevation: 4,
-    flexGrow: 1,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   rowBetween: {
     flexDirection: 'row',
@@ -449,7 +449,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
   },
-  // Custom Slider Styles
   sliderContainer: {
     marginVertical: 10,
   },

@@ -440,7 +440,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
                 )}
                 <View style={styles.actionTextContainer}>
                   <Text style={styles.moreDetails}>Edit Details →</Text>
-                  <Text style={styles.longPressHint}>Long press to edit</Text>
+                  <Text style={styles.longPressHint}>Long press to delete</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -564,10 +564,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   moreDetails: {
-    fontSize: 16,
-    color: '#007AFF',
+    backgroundColor: '#f5c28b',
+    color: 'black',
+    fontSize: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
     fontWeight: '600',
-    marginBottom: 2,
   },
   longPressHint: {
     fontSize: 12,

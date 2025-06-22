@@ -329,10 +329,11 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   header: {
-    fontSize: 28,
+    fontSize: 40,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 20,
     color: '#8B0000',
+    textAlign: 'center',
   },
   avatar: {
     width: 200,

@@ -15,7 +15,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import SearchResults from './SearchResults';
 import ViewServiceAsOwner from './ViewServiceAsOwner';
 
-// Define the Service type to match your other components
 type Service = {
   id: string;
   title: string;
@@ -34,7 +33,6 @@ type Service = {
   acceptsTransmissiblePets?: boolean;
 };
 
-// Navigation types for the Search stack
 export type SearchStackParamList = {
   SearchScreen: undefined;
   SearchResults: {
@@ -142,11 +140,7 @@ function SearchScreen() {
           <Text style={styles.helperText}>From</Text>
           <TouchableOpacity onPress={() => setShowFromPicker(true)}>
             <Text style={styles.dateText}>
-              {fromDate.toLocaleDateString()} 
-              {fromDate.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {fromDate.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
             </Text>
           </TouchableOpacity>
           {showFromPicker && (
@@ -164,11 +158,7 @@ function SearchScreen() {
           <Text style={styles.helperText}>To</Text>
           <TouchableOpacity onPress={() => setShowToPicker(true)}>
             <Text style={styles.dateText}>
-              {toDate.toLocaleDateString()} 
-              {toDate.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {toDate.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
             </Text>
           </TouchableOpacity>
           {showToPicker && (
@@ -188,7 +178,6 @@ function SearchScreen() {
   );
 }
 
-// Main Search component with Stack Navigator (like your Home component)
 export default function Search() {
   return (
     <Stack.Navigator>
@@ -229,14 +218,15 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     backgroundColor: 'white',
-    borderRadius: 16,
     paddingHorizontal: 20,
     paddingTop: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
     elevation: 4,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   cardScroll: {
     paddingBottom: 40,
