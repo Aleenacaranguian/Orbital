@@ -440,7 +440,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
                 )}
                 <View style={styles.actionTextContainer}>
                   <Text style={styles.moreDetails}>Edit Details →</Text>
-                  <Text style={styles.longPressHint}>Long press to edit</Text>
+                  <Text style={styles.longPressHint}>Long press to delete</Text>
                 </View>
               </View>
             </TouchableOpacity>
