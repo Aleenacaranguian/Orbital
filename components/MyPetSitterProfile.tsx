@@ -1,4 +1,4 @@
-//mypetsitterprofile.tsx
+// MyPetSitterProfile.tsx
 import React, { useLayoutEffect, useEffect, useState } from 'react';
 import {
   View,
@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Switch,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -32,20 +31,18 @@ type Sitter = {
   username?: string;
 };
 
-// Define allowed pet types to match home.tsx
 type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
 
-// Updated Service type to match the new table structure
 type Service = {
-  service_id: string; // New primary key (UUID)
-  id: string; // Foreign key referencing user
+  service_id: string;
+  id: string;
   name_of_service: string;
   service_type: string;
   service_url?: string | null;
   created_at?: string;
   price?: string;
   pet_preferences?: string;
-  pet_type?: PetType | null; // Updated to use the specific pet types
+  pet_type?: PetType | null;
   housing_type?: string;
   service_details?: string;
   accepts_pets_with_transmissible_health_issues?: boolean;
@@ -57,16 +54,16 @@ type Service = {
   no_other_dogs_present?: boolean;
 };
 
-// Updated to match Home.tsx HomeStackParamList
 type HomeStackParamList = {
   PetSitterProfileView: undefined;
   EditPetSitterProfile: { sitter: Sitter };
   ViewService: { service: Service };
+  Reviews: { sitterId: string; username: string };
 };
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'PetSitterProfileView'>;
 
-export default function MyPetSitterProfile({ route, navigation }: Props) {
+export default function MyPetSitterProfile({ navigation }: Props) {
   const [sitter, setSitter] = useState<Sitter | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,26 +72,19 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
   const fetchPetSitterProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         Alert.alert('Error', 'Please log in to view your profile');
         return;
       }
 
-      // Fetch profile data for avatar and username
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username, avatar_url')
         .eq('id', user.id)
         .single();
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-      } else {
-        setProfile(profileData);
-      }
+      if (!profileError) setProfile(profileData);
 
-      // Fetch pet sitter data
       const { data: sitterData, error: sitterError } = await supabase
         .from('pet_sitter')
         .select('*')
@@ -103,7 +93,6 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
 
       if (sitterError) {
         if (sitterError.code === 'PGRST116') {
-          // No pet sitter profile exists, create default one
           setSitter({
             id: user.id,
             about_me: '',
@@ -115,7 +104,7 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
             average_stars: 0,
           });
         } else {
-          console.error('Error fetching pet sitter:', sitterError);
+          console.error('Error fetching sitter:', sitterError);
         }
       } else {
         setSitter({
@@ -125,41 +114,16 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
         });
       }
 
-      // Fetch services with all required fields including service_id and pet_type
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
-        .select(`
-          service_id,
-          id,
-          name_of_service,
-          service_type,
-          service_url,
-          created_at,
-          price,
-          pet_preferences,
-          pet_type,
-          housing_type,
-          service_details,
-          accepts_pets_with_transmissible_health_issues,
-          accepts_unsterilised_pets,
-          sitter_present_throughout_service,
-          no_adults_present,
-          no_children_present,
-          no_other_cats_present,
-          no_other_dogs_present
-        `)
+        .select('*')
         .eq('id', user.id)
         .order('created_at', { ascending: false });
 
-      if (servicesError) {
-        console.error('Error fetching services:', servicesError);
-      } else {
-        setServices(servicesData || []);
-      }
-
-    } catch (error) {
-      console.error('Error:', error);
-      Alert.alert('Error', 'Failed to load pet sitter profile');
+      if (!servicesError) setServices(servicesData || []);
+    } catch (err) {
+      console.error(err);
+      Alert.alert('Error', 'Failed to load profile');
     } finally {
       setLoading(false);
     }
@@ -168,10 +132,8 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
   useEffect(() => {
     fetchPetSitterProfile();
 
-    // Set up real-time subscription for profile changes
     const setupSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
         const sitterSubscription = supabase.channel('pet_sitter_changes')
           .on('postgres_changes', {
@@ -208,7 +170,11 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
     navigation.setOptions({
       headerRight: () => (
         <TouchableOpacity
-          onPress={() => sitter && navigation.navigate('EditPetSitterProfile', { sitter })}
+          onPress={() => {
+            if (sitter) {
+              navigation.navigate('EditPetSitterProfile', { sitter });
+            }
+          }}
           style={{ marginRight: 15 }}
         >
           <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>Edit</Text>
@@ -218,23 +184,15 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
   }, [navigation, sitter]);
 
   const handleViewService = (service: Service) => {
-    navigation.navigate('ViewService', {
-      service,
-    });
+    navigation.navigate('ViewService', { service });
   };
 
   const getServiceImageUri = (service: Service) => {
-    if (service.service_url) {
-      return { uri: service.service_url };
-    }
-    return defaultServiceImage;
+    return service.service_url ? { uri: service.service_url } : defaultServiceImage;
   };
 
   const getAvatarUri = () => {
-    if (profile?.avatar_url) {
-      return { uri: profile.avatar_url };
-    }
-    return defaultAvatar;
+    return profile?.avatar_url ? { uri: profile.avatar_url } : defaultAvatar;
   };
 
   if (loading) {
@@ -262,12 +220,23 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
       enableOnAndroid={true}
     >
       <View style={styles.avatarContainer}>
-        <Image
-          source={getAvatarUri()}
-          style={styles.avatar}
-        />
+        <Image source={getAvatarUri()} style={styles.avatar} />
         <Text style={styles.username}>{profile?.username || 'Username'}</Text>
-        <Text style={styles.reviewText}>⭐ {sitter.average_stars?.toFixed(1) || '0.0'} | Reviews</Text>
+
+        <TouchableOpacity
+          onPress={() => {
+            if (sitter?.id && profile?.username) {
+              navigation.navigate('Reviews', {
+                sitterId: sitter.id,
+                username: profile.username,
+              });
+            }
+          }}
+        >
+          <Text style={[styles.reviewText, { textDecorationLine: 'underline' }]}>
+            ⭐ {sitter.average_stars?.toFixed(1) || '0.0'} | Reviews
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.label}>About Me</Text>
@@ -305,30 +274,15 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
       <View style={styles.section}>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Owns pets</Text>
-          <Switch
-            value={!!sitter.owns_pets}
-            disabled
-            trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.owns_pets ? 'white' : '#f4f3f4'}
-          />
+          <Switch value={!!sitter.owns_pets} disabled />
         </View>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Volunteer with animals</Text>
-          <Switch
-            value={!!sitter.volunteers_with_animals}
-            disabled
-            trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.volunteers_with_animals ? 'white' : '#f4f3f4'}
-          />
+          <Switch value={!!sitter.volunteers_with_animals} disabled />
         </View>
         <View style={styles.toggleRow}>
           <Text style={styles.label}>Work with animals</Text>
-          <Switch
-            value={!!sitter.works_with_animals}
-            disabled
-            trackColor={{ false: '#ccc', true: 'lightgreen' }}
-            thumbColor={sitter.works_with_animals ? 'white' : '#f4f3f4'}
-          />
+          <Switch value={!!sitter.works_with_animals} disabled />
         </View>
       </View>
 
@@ -339,16 +293,11 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
         ) : (
           services.map(service => (
             <View key={service.service_id} style={styles.serviceCardLarge}>
-              <Image
-                source={getServiceImageUri(service)}
-                style={styles.serviceImageLarge}
-              />
+              <Image source={getServiceImageUri(service)} style={styles.serviceImageLarge} />
               <View style={styles.serviceInfoLarge}>
                 <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
                 <Text style={styles.serviceType}>{service.service_type}</Text>
-                {service.pet_type && (
-                  <Text style={styles.petType}>For: {service.pet_type}</Text>
-                )}
+                {service.pet_type && <Text style={styles.petType}>For: {service.pet_type}</Text>}
                 <TouchableOpacity onPress={() => handleViewService(service)}>
                   <Text style={styles.moreDetails}>More Details →</Text>
                 </TouchableOpacity>

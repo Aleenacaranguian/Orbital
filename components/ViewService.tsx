@@ -1,4 +1,3 @@
-// viewservice.tsx - Updated Props type
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -9,19 +8,18 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import {
+  NativeStackScreenProps,
+  NativeStackNavigationProp,
+} from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
+import { HomeStackParamList } from './Home';
 
-// Import the HomeStackParamList from Home.tsx
-import { HomeStackParamList } from './Home'; // Adjust the import path as needed
-
-// Use the imported type instead of redefining it
 type Props = NativeStackScreenProps<HomeStackParamList, 'ViewService'>;
-
-// Remove the local Service type definition since it's already defined in Home.tsx
-// Import Service type from Home.tsx instead
-import { Service } from './Home'; // Adjust the import path as needed
+type NavigationProp = NativeStackNavigationProp<HomeStackParamList, 'ViewService'>;
 
 type PetSitter = {
   id: string;
@@ -52,11 +50,12 @@ const petTypes = ['Dog', 'Cat', 'Rabbit', 'Bird', 'Reptile', 'Fish'];
 
 export default function ViewServiceScreen({ route }: Props) {
   const { service } = route.params;
+  const navigation = useNavigation<NavigationProp>();
+
   const [petSitter, setPetSitter] = useState<PetSitter | null>(null);
   const [serviceImageUrl, setServiceImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Rest of your component remains the same...
   useEffect(() => {
     fetchServiceDetails();
   }, []);
@@ -94,7 +93,6 @@ export default function ViewServiceScreen({ route }: Props) {
 
         setServiceImageUrl(imageData.publicUrl);
       }
-
     } catch (error) {
       console.error('Error in fetchServiceDetails:', error);
       Alert.alert('Error', 'Failed to load service details');
@@ -105,7 +103,9 @@ export default function ViewServiceScreen({ route }: Props) {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}
+      >
         <ActivityIndicator size="large" color="#8B0000" />
         <Text style={{ marginTop: 10, color: '#666' }}>Loading service details...</Text>
       </View>
@@ -135,11 +135,20 @@ export default function ViewServiceScreen({ route }: Props) {
               style={styles.sitterAvatar}
             />
             <Text style={styles.sitterName}>@{petSitter.profiles.username || 'User'}</Text>
-            {petSitter.average_stars != null && (
-                <Text style={styles.sitterRating}>
-                    ⭐ {petSitter.average_stars.toFixed(1)} Rating
-                </Text>
-            )}
+
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('Reviews', {
+                  sitterId: petSitter.id,
+                  username: petSitter.profiles.username,
+                })
+              }
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.sitterRating, { textDecorationLine: 'underline' }]}>
+                ★ {petSitter.average_stars.toFixed(1)} | Reviews
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.sitterInfo}>
@@ -183,7 +192,9 @@ export default function ViewServiceScreen({ route }: Props) {
             <View style={styles.subCard}>
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>Years of Experience:</Text>
-                <Text style={styles.toggleValue}>{petSitter.years_of_experience || 'Not specified'}</Text>
+                <Text style={styles.toggleValue}>
+                  {petSitter.years_of_experience || 'Not specified'}
+                </Text>
               </View>
               {renderToggleWithText('Works with animals professionally', petSitter.works_with_animals)}
               {renderToggleWithText('Volunteers with animals', petSitter.volunteers_with_animals)}
@@ -246,8 +257,18 @@ function renderToggleWithText(label: string, value: boolean | undefined) {
   return (
     <View style={styles.toggleRow} key={label}>
       <Text style={styles.toggleLabel}>{label}</Text>
-      <View style={[styles.toggleValueContainer, { backgroundColor: value ? '#d4edda' : '#f8d7da' }]}>
-        <Text style={[styles.toggleValueText, { color: value ? '#155724' : '#721c24' }]}>
+      <View
+        style={[
+          styles.toggleValueContainer,
+          { backgroundColor: value ? '#d4edda' : '#f8d7da' },
+        ]}
+      >
+        <Text
+          style={[
+            styles.toggleValueText,
+            { color: value ? '#155724' : '#721c24' },
+          ]}
+        >
           {value ? 'Yes' : 'No'}
         </Text>
       </View>

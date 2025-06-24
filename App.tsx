@@ -9,6 +9,7 @@ import Home from './components/Home';
 import Search from './components/Search';
 import Messaging from './components/Messaging';
 import MessageSitter from './components/MessageSitter';
+import Reviews from './components/Reviews';
 import Community from './components/Community';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -29,7 +30,6 @@ function Tabs() {
           };
 
           const iconName = iconMap[route.name] || 'help-circle-outline';
-
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#000',
@@ -45,6 +45,7 @@ function Tabs() {
   );
 }
 
+// Main App Component
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
 
@@ -53,9 +54,13 @@ export default function App() {
       setSession(session);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   if (!session) {
@@ -64,18 +69,25 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Tabs"
-        screenOptions={{ headerShown: false }}
-      >
+      <Stack.Navigator initialRouteName="Tabs" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Tabs" component={Tabs} />
+
         <Stack.Screen
           name="MessageSitter"
           component={MessageSitter}
-          options={{ 
-            headerShown: true, 
-            title: 'Message Sitter', 
-            headerBackTitle: 'Chats', 
+          options={{
+            headerShown: true,
+            title: 'Message Sitter',
+            headerBackTitle: 'Chats',
+          }}
+        />
+        <Stack.Screen
+          name="Reviews"
+          component={Reviews}
+          options={{
+            headerShown: true,
+            title: 'Reviews',
+            headerBackTitle: 'Profile',
           }}
         />
       </Stack.Navigator>
