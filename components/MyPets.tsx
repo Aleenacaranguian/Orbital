@@ -81,7 +81,8 @@ export default function MyPets() {
           friendly_with_dogs: pet.friendly_with_dogs,
           friendly_with_cats: pet.friendly_with_cats,
           friendly_with_children: pet.friendly_with_children,
-          pet_url: pet.pet_url
+          pet_url: pet.pet_url,
+          breed: pet.breed
         }));
 
         setPets(transformedPets);
@@ -142,7 +143,8 @@ export default function MyPets() {
             friendly_with_dogs: false,
             friendly_with_cats: false,
             friendly_with_children: false,
-            pet_url: petUrl
+            pet_url: petUrl,
+            breed: null
           });
 
         if (error) throw error;

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+//searchresults.tsx
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,13 +9,42 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Modal,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { SearchStackParamList } from './Search';
+import { SearchStackParamList, Pet, Service } from './Search';
+import { supabase } from '../lib/supabase';
 
 // Props type for this screen
 type Props = NativeStackScreenProps<SearchStackParamList, 'SearchResults'>;
+
+// Define Sitter type to match your pet sitter table
+type PetSitter = {
+  id: string;
+  about_me?: string;
+  years_of_experience?: string;
+  other_pet_related_skills?: string;
+  owns_pets?: boolean;
+  volunteers_with_animals?: boolean;
+  works_with_animals?: boolean;
+  average_stars?: number;
+  created_at?: string;
+};
+
+// Profile type to match your profiles table
+type Profile = {
+  id: string;
+  username: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  postal_code?: string;
+  phone_number?: string;
+  created_at: string;
+  updated_at?: string;
+  avatar_url?: string;
+};
 
 // Custom Slider Component
 interface CustomSliderProps {
@@ -61,58 +91,173 @@ const CustomSlider: React.FC<CustomSliderProps> = ({
   );
 };
 
-const hardcodedAvatars = [
-  require('../assets/default-profile.png'),
-  require('../assets/default-profile.png'),
-  require('../assets/default-profile.png'),
-];
-
-const hardcodedServiceType = 'Boarding';
-
-const listings = Array.from({ length: 10 }).map((_, index) => ({
-  id: `${index + 1}`,
-  title: `Pet Paradise #${index + 1}`,
-  price: 40 + index,
-  rating: 4 + (index % 2),
-  image: require('../assets/petstogether.png'),
-  type: 'Boarding',
-  imageUri: null,
-  ratePerHour: `$${40 + index}`,
-  petPreferences: 'All pets welcome',
-  housingType: 'Apartment',
-  details: 'Professional pet care service with years of experience.',
-  noOtherDogPresent: false,
-  noOtherCatsPresent: false,
-  noChildren: false,
-  noAdults: false,
-  sitterPresentThroughout: true,
-  acceptsUnsterilisedPets: true,
-  acceptsTransmissiblePets: false,
-}));
-
 export default function SearchResultsScreen({ route }: Props) {
   const navigation = useNavigation();
   const { height } = useWindowDimensions();
 
   // Get search parameters from route
-  const { selectedPetIds, selectedService, fromDate, toDate } = route.params;
+  const { selectedPets, selectedService, fromDate, toDate } = route.params;
 
   const PRICE_MIN = 15;
-  const PRICE_MAX = 80;
+  const PRICE_MAX = 100;
 
   const [showFilter, setShowFilter] = useState(false);
   const [priceCap, setPriceCap] = useState(PRICE_MAX);
   const [minRating, setMinRating] = useState<number | null>(null);
   const [filterOpened, setFilterOpened] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchServices();
+  }, [selectedService, selectedPets]);
+
+  // Fixed fetchServices function
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        Alert.alert('Error', 'Please log in to search for services');
+        return;
+      }
+      setCurrentUserId(user.id);
+
+      // Build query for services
+      let query = supabase
+        .from('services')
+        .select('*')
+        .neq('id', user.id); // Exclude current user's services
+
+      // Filter by service type if selected
+      if (selectedService) {
+        query = query.eq('service_type', selectedService);
+      }
+
+      // Filter by pet type if pets are selected
+      if (selectedPets && selectedPets.length > 0) {
+        const petTypes = [...new Set(selectedPets.map(pet => pet.pet_type).filter(Boolean))];
+        if (petTypes.length > 0) {
+          query = query.in('pet_type', petTypes);
+        }
+      }
+
+      const { data: servicesData, error } = await query;
+      if (error) {
+        console.error('Error fetching services:', error);
+        Alert.alert('Error', 'Failed to load services');
+        return;
+      }
+
+      // Get unique user IDs for fetching additional data
+      const userIds = servicesData?.map(service => service.id) || [];
+      
+      // Fetch profiles for all service providers
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Fetch pet_sitter details for all service providers
+      const { data: petSittersData, error: petSittersError } = await supabase
+        .from('pet_sitter')
+        .select('*')
+        .in('id', userIds);
+
+      if (petSittersError) {
+        console.error('Error fetching pet sitters:', petSittersError);
+      }
+
+      // Fixed reviews query - using to_id and selecting the correct columns
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select('to_id, stars_int')
+        .in('to_id', userIds);
+
+      if (reviewsError) {
+        console.error('Error fetching reviews:', reviewsError);
+      }
+
+      // Create lookup maps
+      const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+      const petSittersMap = new Map(petSittersData?.map(sitter => [sitter.id, sitter]) || []);
+      const reviewsMap = new Map<string, number[]>();
+      
+      // Group reviews by to_id (the service provider being reviewed)
+      reviewsData?.forEach(review => {
+        if (!reviewsMap.has(review.to_id)) {
+          reviewsMap.set(review.to_id, []);
+        }
+        if (review.stars_int) {
+          reviewsMap.get(review.to_id)?.push(review.stars_int);
+        }
+      });
+
+      // Transform data to match our Service type
+      const transformedServices: Service[] = (servicesData || []).map(service => {
+        // Get profile data for this service provider
+        const profile = profilesMap.get(service.id);
+        
+        // Get pet sitter data for this service provider
+        const petSitter = petSittersMap.get(service.id);
+        
+        // Get reviews data for this service provider
+        const userReviews = reviewsMap.get(service.id) || [];
+        const averageRating = userReviews.length > 0 
+          ? userReviews.reduce((sum, stars) => sum + stars, 0) / userReviews.length 
+          : petSitter?.average_stars || 0;
+
+        return {
+          service_id: service.service_id,
+          id: service.id,
+          service_type: service.service_type,
+          service_url: service.service_url,
+          created_at: service.created_at,
+          name_of_service: service.name_of_service,
+          price: service.price,
+          pet_preferences: service.pet_preferences,
+          pet_type: service.pet_type,
+          housing_type: service.housing_type,
+          service_details: service.service_details,
+          no_other_dogs_present: service.no_other_dogs_present,
+          no_other_cats_present: service.no_other_cats_present,
+          no_children_present: service.no_children_present,
+          no_adults_present: service.no_adults_present,
+          sitter_present_throughout_service: service.sitter_present_throughout_service,
+          accepts_unsterilised_pets: service.accepts_unsterilised_pets,
+          accepts_pets_with_transmissible_health_issues: service.accepts_pets_with_transmissible_health_issues,
+          // Additional fields for display
+          sitter_name: profile?.username || 'Unknown Sitter',
+          sitter_rating: averageRating,
+          sitter_image: profile?.avatar_url, // Use profile avatar
+        };
+      });
+
+      setServices(transformedServices);
+    } catch (error) {
+      console.error('Error in fetchServices:', error);
+      Alert.alert('Error', 'Failed to load services');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const priceFilterActive = priceCap > PRICE_MIN && priceCap < PRICE_MAX;
   const ratingFilterActive = minRating !== null;
   const filtersApplied = (priceFilterActive ? 1 : 0) + (ratingFilterActive ? 1 : 0);
   const showBadge = filterOpened && filtersApplied > 0;
 
-  const filteredListings = listings.filter((item) => {
-    const passPrice = priceFilterActive ? item.price <= priceCap : true;
-    const passRating = ratingFilterActive ? item.rating >= (minRating ?? 0) : true;
+  const filteredServices = services.filter((service) => {
+    const servicePrice = parseFloat(service.price || '0');
+    const passPrice = priceFilterActive ? servicePrice <= priceCap : true;
+    const passRating = ratingFilterActive ? (service.sitter_rating || 0) >= (minRating ?? 0) : true;
     return passPrice && passRating;
   });
 
@@ -139,6 +284,73 @@ export default function SearchResultsScreen({ route }: Props) {
     })}`;
   };
 
+  // Get pet image URI - Fixed to use correct storage bucket
+  const getPetImageUri = (pet: Pet) => {
+    if (pet.pet_url) {
+      if (pet.pet_url.startsWith('http')) {
+        return { uri: pet.pet_url };
+      }
+      const { data } = supabase.storage
+        .from('my-pets')
+        .getPublicUrl(pet.pet_url);
+      return { uri: data.publicUrl };
+    }
+    return require('../assets/default-profile.png');
+  };
+
+  // Get service image URI - Fixed to use correct fallback logic
+  const getServiceImageUri = (service: Service) => {
+    // First try to use the service's own image
+    if (service.service_url) {
+      if (service.service_url.startsWith('http')) {
+        return { uri: service.service_url };
+      }
+      const { data } = supabase.storage
+        .from('services')
+        .getPublicUrl(service.service_url);
+      return { uri: data.publicUrl };
+    }
+    
+    // Fallback to sitter avatar if no service image
+    if (service.sitter_image) {
+      if (service.sitter_image.startsWith('http')) {
+        return { uri: service.sitter_image };
+      }
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(service.sitter_image);
+      return { uri: data.publicUrl };
+    }
+    
+    // Final fallback to default pet sitter image
+    return require('../assets/petsitter.png');
+  };
+
+  // Render star rating with emoji
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 !== 0;
+    
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<Text key={i} style={styles.goldStar}>★</Text>);
+    }
+    
+    if (hasHalfStar) {
+      stars.push(<Text key="half" style={styles.goldStar}>☆</Text>);
+    }
+    
+    return stars;
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text>Loading services...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>SEARCH</Text>
@@ -157,13 +369,18 @@ export default function SearchResultsScreen({ route }: Props) {
         </View>
 
         <View style={styles.avatarRow}>
-          {hardcodedAvatars.map((src, i) => (
-            <Image key={i} source={src} style={styles.avatar} />
+          {selectedPets.slice(0, 3).map((pet) => (
+            <Image key={pet.id} source={getPetImageUri(pet)} style={styles.avatar} />
           ))}
+          {selectedPets.length > 3 && (
+            <View style={styles.moreAvatars}>
+              <Text style={styles.moreText}>+{selectedPets.length - 3}</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.tag}>
-          <Text style={styles.tagText}>{selectedService || hardcodedServiceType}</Text>
+          <Text style={styles.tagText}>{selectedService}</Text>
         </View>
 
         <View style={styles.datesWrapper}>
@@ -176,32 +393,44 @@ export default function SearchResultsScreen({ route }: Props) {
         </View>
 
         <ScrollView contentContainerStyle={{ paddingBottom: 120 }} keyboardShouldPersistTaps="handled">
-          {filteredListings.length > 0 ? (
-            filteredListings.map((item) => (
-              <View key={item.id} style={styles.listingCard}>
-                <Image source={item.image} style={styles.listingImage} />
+          {filteredServices.length > 0 ? (
+            filteredServices.map((service) => (
+              <View key={service.service_id} style={styles.listingCard}>
+                <Image source={getServiceImageUri(service)} style={styles.listingImage} />
                 <View style={styles.listingInfo}>
-                  <Text style={styles.listingTitle}>{item.title}</Text>
-                  <Text style={styles.listingType}>{selectedService || hardcodedServiceType}</Text>
+                  <Text style={styles.listingTitle}>{service.name_of_service || 'Untitled Service'}</Text>
+                  <Text style={styles.sitterName}>by {service.sitter_name}</Text>
+                  <Text style={styles.listingType}>{service.service_type}</Text>
                   <View style={styles.ratingRow}>
-                    {Array.from({ length: item.rating }).map((_, i) => (
-                      <Text key={i} style={styles.goldStar}>★</Text>
-                    ))}
+                    <Text style={styles.starEmoji}>⭐</Text>
+                    <Text style={styles.ratingNumber}>{service.sitter_rating?.toFixed(1) || '0.0'}</Text>
                   </View>
                   <TouchableOpacity
-                    onPress={() => (navigation as any).navigate('ViewServiceAsOwner', { service: item })}
+                    onPress={() => (navigation as any).navigate('ViewServiceAsOwner', { 
+                      service: service,
+                      selectedPets: selectedPets,
+                      fromDate: fromDate,
+                      toDate: toDate
+                    })}
                   >
                     <Text style={styles.moreDetails}>More Details →</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.priceTag}>
-                  <Text style={styles.price}>${item.price}</Text>
-                  <Text style={styles.perNight}>per night</Text>
+                  <Text style={styles.price}>${service.price || '0'}</Text>
+                  <Text style={styles.perHour}>per hour</Text>
                 </View>
               </View>
             ))
           ) : (
-            <Text style={styles.noResultsText}>No results match your filters.</Text>
+            <View style={styles.noResultsContainer}>
+              <Text style={styles.noResultsText}>
+                {services.length === 0 
+                  ? "No services found for your criteria. Try adjusting your search parameters."
+                  : "No results match your filters. Try adjusting the price or rating filters."
+                }
+              </Text>
+            </View>
           )}
         </ScrollView>
       </View>
@@ -218,7 +447,7 @@ export default function SearchResultsScreen({ route }: Props) {
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.modalLabel}>Max Price: ${priceCap}</Text>
+              <Text style={styles.modalLabel}>Max Price per Hour: ${priceCap}</Text>
               <CustomSlider
                 minimumValue={PRICE_MIN}
                 maximumValue={PRICE_MAX}
@@ -256,6 +485,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 30,
     alignItems: 'center',
+  },
+  centered: {
+    justifyContent: 'center',
   },
   header: {
     fontSize: 40,
@@ -314,7 +546,23 @@ const styles = StyleSheet.create({
   avatar: {
     width: 60,
     height: 60,
+    borderRadius: 30,
     marginRight: 8,
+    backgroundColor: '#eee',
+  },
+  moreAvatars: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ddd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  moreText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
   },
   tag: {
     backgroundColor: '#844d3e',
@@ -338,9 +586,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 2,
   },
-  cardScroll: {
-    paddingBottom: 40,
-  },
   listingCard: {
     flexDirection: 'row',
     backgroundColor: '#fff',
@@ -353,7 +598,7 @@ const styles = StyleSheet.create({
   },
   listingImage: {
     width: 120,
-    height: 100,
+    height: 120,
     borderRadius: 12,
     margin: 12,
     backgroundColor: '#eee',
@@ -369,22 +614,39 @@ const styles = StyleSheet.create({
   listingTitle: {
     color: '#8B0000',
     fontWeight: '600',
-    fontSize: 20,
-    marginBottom: 4,
+    fontSize: 18,
+    marginBottom: 2,
     flexShrink: 1,
+  },
+  sitterName: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    marginBottom: 2,
   },
   listingType: {
     fontSize: 12,
     color: '#555',
+    marginBottom: 4,
   },
   ratingRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginVertical: 4,
+  },
+  starEmoji: {
+    fontSize: 16,
+    marginRight: 4,
   },
   goldStar: {
     color: '#FFD700',
-    fontSize: 18,
-    marginRight: 2,
+    fontSize: 16,
+    marginRight: 1,
+  },
+  ratingNumber: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
   },
   moreDetails: {
     backgroundColor: '#f5c28b',
@@ -403,18 +665,25 @@ const styles = StyleSheet.create({
   },
   price: {
     color: 'red',
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: 'bold',
   },
-  perNight: {
+  perHour: {
     fontSize: 12,
     color: '#555',
   },
+  noResultsContainer: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 20,
+    alignItems: 'center',
+  },
   noResultsText: {
     textAlign: 'center',
-    marginTop: 20,
     fontSize: 16,
-    color: '#555',
+    color: '#666',
+    lineHeight: 22,
   },
   modalOverlay: {
     flex: 1,

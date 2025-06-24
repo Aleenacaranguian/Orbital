@@ -28,6 +28,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
   const { pet } = route.params;
 
   const [name, setName] = useState(pet.name);
+  const [breed, setBreed] = useState(pet.breed || ''); // Add breed state
   const [birthday, setBirthday] = useState(pet.birthday || '');
   const [petType, setPetType] = useState(pet.pet_type || '');
   const [size, setSize] = useState(pet.size || '');
@@ -224,6 +225,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
         const { error } = await supabase
           .from('my_pets')
           .update({
+            breed: breed || null, // Add breed to update
             birthday: birthday || null,
             pet_type: petType || null,
             size: size || null,
@@ -243,7 +245,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
           {
             text: 'OK',
             onPress: () => {
-              navigation.goBack();
+              navigation.popToTop();
             }
           }
         ]);
@@ -300,6 +302,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
   }, [
     navigation,
     name,
+    breed, // Add breed to dependencies
     birthday,
     petType,
     size,
@@ -356,6 +359,15 @@ export default function EditPetProfile({ route, navigation }: Props) {
           selectTextOnFocus={false}
         />
         <Text style={styles.helperText}>Pet name cannot be changed</Text>
+
+        <Text style={styles.label}>Breed</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter pet breed"
+          value={breed}
+          onChangeText={setBreed}
+          placeholderTextColor="gray"
+        />
 
         <Text style={styles.label}>Birthday</Text>
         <TextInput

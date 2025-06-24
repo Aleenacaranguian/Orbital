@@ -12,7 +12,7 @@ import {
   RefreshControl
 } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import EditProfile from '../components/EditProfile';
 import MyPets from '../components/MyPets';
@@ -31,6 +31,7 @@ export type Pet = {
   birthday?: string | null;
   pet_type?: string | null;
   size?: string | null;
+  breed?: string|null;
   sterilised?: boolean;
   transmissible_health_issues?: boolean;
   friendly_with_dogs?: boolean;
@@ -250,10 +251,6 @@ function ProfileScreen({ route, navigation }: { route: any; navigation: any }) {
           color="white"
           onPress={async () => {
             await supabase.auth.signOut();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
           }}
         />
       </View>
