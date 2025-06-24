@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+//search.tsx
+import React, { useState, useCallback } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import {
   useWindowDimensions,
@@ -10,78 +11,216 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { supabase } from '../lib/supabase'; // Adjust path to your supabase config
 import SearchResults from './SearchResults';
 import ViewServiceAsOwner from './ViewServiceAsOwner';
 
-// Define the Service type to match your other components
-type Service = {
-  id: string;
-  title: string;
-  type: string;
-  imageUri?: string | null;
-  ratePerHour?: string;
-  petPreferences?: string;
-  housingType?: string;
-  details?: string;
-  noOtherDogPresent?: boolean;
-  noOtherCatsPresent?: boolean;
-  noChildren?: boolean;
-  noAdults?: boolean;
-  sitterPresentThroughout?: boolean;
-  acceptsUnsterilisedPets?: boolean;
-  acceptsTransmissiblePets?: boolean;
+// Define types based on your Supabase schema
+export type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
+
+export type Pet = {
+  id: string; // This is actually user_id, not pet_id
+  name: string;
+  birthday?: string | null;
+  pet_type?: PetType | null;
+  size?: string | null;
+  breed?: string | null;
+  sterilised?: boolean;
+  transmissible_health_issues?: boolean;
+  friendly_with_dogs?: boolean;
+  friendly_with_cats?: boolean;
+  friendly_with_children?: boolean;
+  pet_url?: string | null;
+  created_at?: string;
+};
+
+export type Service = {
+  service_id: string;
+  id: string; // user_id of the sitter
+  service_type: string;
+  service_url?: string | null;
+  created_at?: string;
+  name_of_service?: string;
+  price?: string;
+  pet_preferences?: string;
+  pet_type?: PetType | null;
+  housing_type?: string;
+  service_details?: string;
+  no_other_dogs_present?: boolean;
+  no_other_cats_present?: boolean;
+  no_children_present?: boolean;
+  no_adults_present?: boolean;
+  sitter_present_throughout_service?: boolean;
+  accepts_unsterilised_pets?: boolean;
+  accepts_pets_with_transmissible_health_issues?: boolean;
+  // Additional fields for display
+  sitter_name?: string;
+  sitter_rating?: number;
+  sitter_image?: string;
 };
 
 // Navigation types for the Search stack
 export type SearchStackParamList = {
   SearchScreen: undefined;
   SearchResults: {
-    selectedPetIds: string[];
+    selectedPets: Pet[];
     selectedService: string | null;
     fromDate: string;
     toDate: string;
   };
-  ViewServiceAsOwner: { service: Service };
+  ViewServiceAsOwner: { 
+    service: Service;
+    selectedPets: Pet[];
+    fromDate: string;
+    toDate: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<SearchStackParamList>();
 
 type SearchScreenNavigationProp = StackNavigationProp<SearchStackParamList, 'SearchResults'>;
 
-const petAvatars = [
-  { id: '1', source: require('../assets/default-profile.png') },
-  { id: '2', source: require('../assets/default-profile.png') },
-  { id: '3', source: require('../assets/default-profile.png') },
+const serviceTypes = [
+  'House visit', 
+  'House sitting', 
+  'Dog walking', 
+  'Daycare', 
+  'Boarding', 
+  'Grooming', 
+  'Training', 
+  'Transport'
 ];
-
-const serviceTypes = ['House Visit', 'House Sitting', 'Dog Walking', 'Daycare', 'Boarding', 'Grooming', 'Training', 'Transport'];
 
 function SearchScreen() {
   const navigation = useNavigation<SearchScreenNavigationProp>();
   const { height } = useWindowDimensions();
 
-  const [selectedPetIds, setSelectedPetIds] = useState<string[]>([]);
+  const [userPets, setUserPets] = useState<Pet[]>([]);
+  const [selectedPetIds, setSelectedPetIds] = useState<string[]>([]); // Changed to support multiple pets by unique ID
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date());
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [showToPicker, setShowToPicker] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  function togglePetSelection(petId: string) {
-    setSelectedPetIds((prev) =>
-      prev.includes(petId) ? prev.filter((id) => id !== petId) : [...prev, petId]
-    );
-  }
+  // Fetch user's pets on component mount and when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserPets();
+    }, [])
+  );
 
-  function handleSearch() {
+  const fetchUserPets = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        Alert.alert('Error', 'Please log in to view your pets');
+        return;
+      }
+
+      const { data: pets, error } = await supabase
+        .from('my_pets')
+        .select('*')
+        .eq('id', user.id); // 'id' is the user_id in my_pets table
+
+      if (error) {
+        console.error('Error fetching pets:', error);
+        Alert.alert('Error', 'Failed to load your pets');
+        return;
+      }
+
+      setUserPets(pets || []);
+      
+      // Clear selected pets if they no longer exist
+      if (pets && pets.length > 0) {
+        const currentPetIds = pets.map(pet => getPetUniqueId(pet));
+        setSelectedPetIds(prev => prev.filter(id => currentPetIds.includes(id)));
+      } else {
+        setSelectedPetIds([]);
+      }
+    } catch (error) {
+      console.error('Error in fetchUserPets:', error);
+      Alert.alert('Error', 'Failed to load your pets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create unique pet identifier since pets don't have individual IDs
+  const getPetUniqueId = (pet: Pet) => {
+    return `${pet.id}-${pet.name}-${pet.created_at || ''}`;
+  };
+
+  const selectPet = (pet: Pet) => {
+    const petId = getPetUniqueId(pet);
+    
+    if (selectedPetIds.includes(petId)) {
+      // Remove pet if already selected
+      setSelectedPetIds(selectedPetIds.filter(id => id !== petId));
+    } else {
+      // Add pet to selection
+      setSelectedPetIds([...selectedPetIds, petId]);
+    }
+  };
+
+  // Get selected pets objects
+  const getSelectedPets = (): Pet[] => {
+    return userPets.filter(pet => selectedPetIds.includes(getPetUniqueId(pet)));
+  };
+
+  const handleSearch = () => {
+    const selectedPets = getSelectedPets();
+    
+    if (selectedPets.length === 0) {
+      Alert.alert('Select Pet', 'Please select at least one pet for the service');
+      return;
+    }
+
+    if (!selectedService) {
+      Alert.alert('Select Service', 'Please select a service type');
+      return;
+    }
+
+    if (fromDate >= toDate) {
+      Alert.alert('Invalid Dates', 'End date must be after start date');
+      return;
+    }
+
     navigation.navigate('SearchResults', {
-      selectedPetIds,
+      selectedPets,
       selectedService,
       fromDate: fromDate.toISOString(),
       toDate: toDate.toISOString(),
     });
+  };
+
+  const getPetImageUri = (pet: Pet) => {
+    if (pet.pet_url) {
+      // If you're storing full URLs, use directly
+      if (pet.pet_url.startsWith('http')) {
+        return { uri: pet.pet_url };
+      }
+      // If storing storage paths, construct the full URL using correct bucket name
+      const { data } = supabase.storage
+        .from('my-pets') // Fixed bucket name to match your schema
+        .getPublicUrl(pet.pet_url);
+      return { uri: data.publicUrl };
+    }
+    return require('../assets/default-profile.png');
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text>Loading your pets...</Text>
+      </View>
+    );
   }
 
   return (
@@ -93,27 +232,47 @@ function SearchScreen() {
           <View style={styles.rowBetween}>
             <View>
               <Text style={styles.subLabel}>Who</Text>
-              <Text style={styles.helperText}>Select One or More</Text>
+              <Text style={styles.helperText}>Select Pet(s)</Text>
             </View>
             <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
               <Text style={styles.searchButtonText}>Search</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.avatarRow}>
-            {petAvatars.map((pet) => (
-              <TouchableOpacity
-                key={pet.id}
-                onPress={() => togglePetSelection(pet.id)}
-                style={[
-                  styles.avatarWrapper,
-                  selectedPetIds.includes(pet.id) && styles.avatarSelected,
-                ]}
-              >
-                <Image source={pet.source} style={styles.avatar} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          {userPets.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.avatarRow}>
+              {userPets.map((pet, index) => {
+                const petId = getPetUniqueId(pet);
+                const isSelected = selectedPetIds.includes(petId);
+                
+                return (
+                  <TouchableOpacity
+                    key={petId} // Using unique pet identifier
+                    onPress={() => selectPet(pet)}
+                    style={[
+                      styles.avatarWrapper,
+                      isSelected && styles.avatarSelected,
+                    ]}
+                  >
+                    <Image source={getPetImageUri(pet)} style={styles.avatar} />
+                    <Text style={styles.petName}>{pet.name}</Text>
+                    <Text style={styles.petType}>{pet.pet_type}</Text>
+                    {isSelected && (
+                      <View style={styles.selectedIndicator}>
+                        <Text style={styles.checkmark}>✓</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          ) : (
+            <View style={styles.noPetsContainer}>
+              <Text style={styles.noPetsText}>
+                You haven't added any pets yet. Add pets in your profile to search for services.
+              </Text>
+            </View>
+          )}
 
           <Text style={styles.subLabel}>Service Type</Text>
           <Text style={styles.helperText}>Select One</Text>
@@ -143,6 +302,7 @@ function SearchScreen() {
           <TouchableOpacity onPress={() => setShowFromPicker(true)}>
             <Text style={styles.dateText}>
               {fromDate.toLocaleDateString()} 
+              {' '}
               {fromDate.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -165,6 +325,7 @@ function SearchScreen() {
           <TouchableOpacity onPress={() => setShowToPicker(true)}>
             <Text style={styles.dateText}>
               {toDate.toLocaleDateString()} 
+              {' '}
               {toDate.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -188,7 +349,7 @@ function SearchScreen() {
   );
 }
 
-// Main Search component with Stack Navigator (like your Home component)
+// Main Search component with Stack Navigator
 export default function Search() {
   return (
     <Stack.Navigator>
@@ -218,6 +379,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     alignItems: 'center',
+  },
+  centered: {
+    justifyContent: 'center',
   },
   header: {
     fontSize: 40,
@@ -262,18 +426,63 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   avatarWrapper: {
-    marginRight: 10,
+    marginRight: 15,
     borderRadius: 50,
     borderWidth: 2,
     borderColor: 'transparent',
+    alignItems: 'center',
+    paddingBottom: 8,
+    position: 'relative',
   },
   avatarSelected: {
     borderColor: '#8B0000',
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 30,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 4,
+  },
+  petName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    maxWidth: 80,
+  },
+  petType: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#8B0000',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  noPetsContainer: {
+    backgroundColor: '#f8f8f8',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  noPetsText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   searchButton: {
     backgroundColor: '#007AFF',

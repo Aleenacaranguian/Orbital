@@ -157,7 +157,7 @@ export default function ViewServiceScreen({ route }: Props) {
           <Text>{service.pet_type || 'Not specified'}</Text>
         </View>
 
-        <Text style={styles.label}>Rate per Hour/Night</Text>
+        <Text style={styles.label}>Rate per Hour</Text>
         <View style={styles.readOnlyField}>
           <Text>{service.price || 'Contact for pricing'}</Text>
         </View>

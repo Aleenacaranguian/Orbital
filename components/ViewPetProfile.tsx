@@ -96,6 +96,14 @@ export default function ViewPetProfile({ route, navigation }: Props) {
         selectTextOnFocus={false}
       />
 
+      <Text style={styles.label}>Breed</Text>
+      <TextInput
+        style={styles.input}
+        value={pet.breed || 'Not set'}
+        editable={false}
+        selectTextOnFocus={false}
+      />
+
       <Text style={styles.label}>Birthday</Text>
       <TextInput
         style={styles.input}

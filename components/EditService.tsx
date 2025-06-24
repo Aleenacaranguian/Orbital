@@ -386,12 +386,12 @@ export default function EditServiceScreen({ route, navigation }: Props) {
             />
           </View>
 
-          <Text style={styles.label}>Rate per Hour/Night</Text>
+          <Text style={styles.label}>Rate per Hour</Text>
           <TextInput
             style={styles.input}
             value={price}
             onChangeText={setPrice}
-            placeholder="e.g., $20/hour"
+            placeholder="e.g., 20"
             keyboardType="default"
           />
 

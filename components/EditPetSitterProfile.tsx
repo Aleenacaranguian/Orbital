@@ -193,7 +193,10 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
       }
 
       Alert.alert('Success', 'Pet sitter profile saved successfully!');
-      navigation.goBack();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
     } catch (error) {
       console.error('Error saving pet sitter profile:', error);
       Alert.alert('Error', 'Failed to save pet sitter profile. Please try again.');
@@ -383,7 +386,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
           style={styles.input}
           value={years_of_experience}
           onChangeText={set_years_of_experience}
-          placeholder="e.g. 2 - 5"
+          placeholder="e.g. 2"
           placeholderTextColor="gray"
         />
       </View>

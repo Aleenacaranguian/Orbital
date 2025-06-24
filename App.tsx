@@ -14,8 +14,6 @@ import { Ionicons } from '@expo/vector-icons'
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
 
-
-
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
 
