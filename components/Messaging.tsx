@@ -1,22 +1,365 @@
-import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import MessageSitterScreen from './MessageSitter';
+import { supabase } from '../lib/supabase';
+
+const defaultAvatar = require('../assets/default-profile.png');
+
+// Complete MessagingStackParamList type definition for Messaging.tsx
+export type MessagingStackParamList = {
+  ChatList: undefined;
+  MessageSitter: {
+    sitterUsername: string;
+    sitterAvatar: any;
+    sitterId: string;
+    initialMessage?: string;
+  };
+};
+
+const Stack = createNativeStackNavigator<MessagingStackParamList>();
+
+type ChatItem = {
+  id: string;
+  name: string;
+  message: string;
+  avatar: any;
+  sitterId: string;
+  lastMessageTime: string;
+};
+
+type ChatListScreenNavigationProp = NativeStackNavigationProp<
+  MessagingStackParamList,
+  'ChatList'
+>;
+
+function ChatListScreen() {
+  const navigation = useNavigation<ChatListScreenNavigationProp>();
+  const [chats, setChats] = useState<ChatItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  // Refetch chats when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentUser) {
+        fetchChats();
+      }
+    }, [currentUser])
+  );
+
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      Alert.alert('Error', 'Failed to load user information');
+    }
+  };
+
+  const fetchChats = async () => {
+    if (!currentUser) return;
+
+    try {
+      setLoading(true);
+
+      // Get all conversations where current user is either sender or recipient
+      const { data: messages, error: messagesError } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          sender_id,
+          recipient_id,
+          message_content,
+          created_at
+        `)
+        .or(`sender_id.eq.${currentUser.id},recipient_id.eq.${currentUser.id}`)
+        .order('created_at', { ascending: false });
+
+      if (messagesError) {
+        console.error('Error fetching messages:', messagesError);
+        Alert.alert('Error', 'Failed to load chats');
+        return;
+      }
+
+      // Get unique user IDs from the messages
+      const userIds = new Set<string>();
+      messages?.forEach((message) => {
+        userIds.add(message.sender_id);
+        userIds.add(message.recipient_id);
+      });
+
+      // Fetch profile data for all users involved in conversations
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', Array.from(userIds));
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        Alert.alert('Error', 'Failed to load user profiles');
+        return;
+      }
+
+      // Create a map of user profiles for quick lookup
+      const profileMap = new Map<string, any>();
+      profiles?.forEach((profile) => {
+        profileMap.set(profile.id, profile);
+      });
+
+      // Group messages by conversation partner
+      const conversationMap = new Map<string, any>();
+
+      messages?.forEach((message) => {
+        // Determine who the other person in the conversation is
+        const isCurrentUserSender = message.sender_id === currentUser.id;
+        const otherUserId = isCurrentUserSender ? message.recipient_id : message.sender_id;
+        const otherUser = profileMap.get(otherUserId);
+
+        if (otherUser && !conversationMap.has(otherUserId)) {
+          conversationMap.set(otherUserId, {
+            id: otherUserId,
+            name: otherUser.username || 'Unknown User',
+            avatar: otherUser.avatar_url ? { uri: getAvatarUrl(otherUser.avatar_url) } : defaultAvatar,
+            sitterId: otherUserId,
+            message: message.message_content,
+            lastMessageTime: message.created_at,
+            messages: [message]
+          });
+        } else if (otherUser && conversationMap.has(otherUserId)) {
+          // Only update if this message is more recent
+          const existing = conversationMap.get(otherUserId);
+          if (new Date(message.created_at) > new Date(existing.lastMessageTime)) {
+            existing.message = message.message_content;
+            existing.lastMessageTime = message.created_at;
+          }
+          existing.messages.push(message);
+        }
+      });
+
+      // Convert map to array and sort by last message time
+      const chatList = Array.from(conversationMap.values()).sort((a, b) => 
+        new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+      );
+
+      setChats(chatList);
+    } catch (error) {
+      console.error('Error in fetchChats:', error);
+      Alert.alert('Error', 'Failed to load chats');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAvatarUrl = (avatarPath: string) => {
+    if (!avatarPath) return null;
+    const { data } = supabase.storage.from('avatars').getPublicUrl(avatarPath);
+    return data.publicUrl;
+  };
+
+  const formatLastMessageTime = (timestamp: string) => {
+    const msgDate = new Date(timestamp);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - msgDate.getTime()) / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMinutes < 1) {
+      return 'Just now';
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    } else if (diffInDays === 1) {
+      return 'Yesterday';
+    } else if (diffInDays < 7) {
+      return msgDate.toLocaleDateString([], { weekday: 'short' });
+    } else {
+      return msgDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  const handlePress = (chat: ChatItem) => {
+    navigation.navigate('MessageSitter', {
+      sitterUsername: chat.name,
+      sitterAvatar: chat.avatar,
+      sitterId: chat.sitterId,
+    });
+  };
+
+  const renderChatItem = ({ item }: { item: ChatItem }) => (
+    <TouchableOpacity style={styles.chatItem} onPress={() => handlePress(item)}>
+      <View style={styles.avatarContainer}>
+        <Image source={item.avatar} style={styles.avatar} />
+      </View>
+      <View style={styles.chatContent}>
+        <View style={styles.chatHeader}>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.timeText}>{formatLastMessageTime(item.lastMessageTime)}</Text>
+        </View>
+        <Text style={styles.message} numberOfLines={1}>
+          {item.message}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color="#8B0000" />
+        <Text style={styles.loadingText}>Loading chats...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>CHATS</Text>
+      
+      <View style={[styles.resultsCard, { flex: 1 }]}>
+        {chats.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No conversations yet</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Start a conversation with a pet sitter to see your chats here
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={chats}
+            keyExtractor={(item) => item.id}
+            renderItem={renderChatItem}
+            showsVerticalScrollIndicator={false}
+            refreshing={loading}
+            onRefresh={fetchChats}
+          />
+        )}
+      </View>
+    </View>
+  );
+}
 
 export default function Messaging() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Messaging Screen</Text>
-    </View>
-  )
+    <Stack.Navigator initialRouteName="ChatList" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="ChatList" component={ChatListScreen} />
+      <Stack.Screen name="MessageSitter" component={MessageSitterScreen} />
+    </Stack.Navigator>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFF3E3',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    alignItems: 'center',
+  },
+  centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
-  text: {
-    fontSize: 22,
+  header: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#8B0000',
+    textAlign: 'center',
   },
-})
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  resultsCard: {
+    width: '100%',
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
+    elevation: 4,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  chatItem: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    alignItems: 'center',
+    borderBottomWidth: 0.5,
+    borderColor: '#ccc',
+  },
+  avatarContainer: {
+    marginRight: 12,
+  },
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+  },
+  chatContent: {
+    flex: 1,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  name: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#333',
+    flex: 1,
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#999',
+    marginLeft: 10,
+  },
+  message: {
+    color: '#666',
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 40,
+  },
+});

@@ -60,14 +60,25 @@ const housingTypes = [
   'NA',
 ];
 
-export default function ViewServiceAsOwnerScreen({ route }: Props) {
+export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   const { service, selectedPets, fromDate, toDate } = route.params;
   const [sitterInfo, setSitterInfo] = useState<SitterInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchSitterInfo();
   }, [service.id]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
 
   const fetchSitterInfo = async () => {
     try {
@@ -137,36 +148,76 @@ export default function ViewServiceAsOwnerScreen({ route }: Props) {
     return defaultProfileImage;
   };
 
-  const handleBookService = async () => {
+  const createDefaultMessage = () => {
+    const petNames = selectedPets?.map((pet: Pet) => pet.name).join(', ') || 'My pet(s)';
+    const serviceName = service.name_of_service || service.service_type;
+    const fromDateStr = fromDate ? new Date(fromDate).toLocaleDateString() : 'TBD';
+    const toDateStr = toDate ? new Date(toDate).toLocaleDateString() : 'TBD';
+    
+    return `Hello ${sitterInfo?.profile?.username || 'there'}! I would like to inquire about your ${serviceName} service.\n\nBooking Details:\n• Pet(s): ${petNames}\n• Service: ${serviceName}\n• From: ${fromDateStr}\n• To: ${toDateStr}\n• Rate: $${service.price || 'TBD'} per hour\n\nI'm interested in booking this service. Could you please let me know your availability?`;
+  };
+
+  const handleSendMessage = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        Alert.alert('Error', 'Please log in to book a service');
+      if (!currentUser) {
+        Alert.alert('Error', 'Please log in to send a message');
         return;
       }
-
-      // Here you would typically create a booking record
-      // For now, we'll just show a confirmation
+  
+      if (!sitterInfo?.profile?.id) {
+        Alert.alert('Error', 'Unable to identify the sitter');
+        return;
+      }
+  
+      // Check if user is trying to message themselves
+      if (currentUser.id === sitterInfo.profile.id) {
+        Alert.alert('Error', 'You cannot send a message to yourself');
+        return;
+      }
+  
+      const defaultMessage = createDefaultMessage();
+  
+      // Insert the message into the messages table
+      const { data: messageData, error: messageError } = await supabase
+        .from('messages')
+        .insert({
+          sender_id: currentUser.id,
+          recipient_id: sitterInfo.profile.id,
+          message_content: defaultMessage,
+          is_read: false
+        })
+        .select()
+        .single();
+  
+      if (messageError) {
+        console.error('Error sending message:', messageError);
+        Alert.alert('Error', 'Failed to send message. Please try again.');
+        return;
+      }
+  
+      // Show success alert without navigation
       Alert.alert(
-        'Booking Request',
-        `Would you like to send a booking request to ${sitterInfo?.profile?.username || 'this sitter'} for ${service.name_of_service}?\n\nFrom: ${new Date(fromDate).toLocaleString()}\nTo: ${new Date(toDate).toLocaleString()}\nPets: ${selectedPets.map((pet: Pet) => pet.name).join(', ')}`,
+        'Message Sent!', 
+        'Your message has been sent to the sitter. You can continue the conversation in your Messages tab.',
         [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Send Request', 
+          {
+            text: 'OK',
             onPress: () => {
-              // TODO: Implement booking creation logic
-              Alert.alert('Success', 'Booking request sent!');
+              // Just close the alert, no navigation
+              console.log('Message sent successfully');
             }
           }
         ]
       );
+  
     } catch (error) {
-      console.error('Error in handleBookService:', error);
-      Alert.alert('Error', 'Failed to send booking request');
+      console.error('Error in handleSendMessage:', error);
+      Alert.alert('Error', 'Failed to send message');
     }
   };
+
+
+
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -334,8 +385,8 @@ export default function ViewServiceAsOwnerScreen({ route }: Props) {
           </>
         )}
 
-        {/* Book Service Button */}
-        <TouchableOpacity style={styles.bookButton} onPress={handleBookService}>
+        {/* Send Message Button */}
+        <TouchableOpacity style={styles.bookButton} onPress={handleSendMessage}>
           <Text style={styles.bookButtonText}>Send Message to Sitter</Text>
         </TouchableOpacity>
       </View>
