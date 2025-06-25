@@ -163,9 +163,9 @@ export default function MessageSitterScreen() {
             setChatMessages(data);
             lastMessageTimestampRef.current = latestMessage.created_at;
             
-            // Auto-scroll if there are new messages
+            // Auto-scroll without animation
             setTimeout(() => {
-              flatListRef.current?.scrollToEnd({ animated: true });
+              flatListRef.current?.scrollToEnd({ animated: false });
             }, 100);
           }
         }
@@ -218,8 +218,9 @@ export default function MessageSitterScreen() {
                 return [...prev, newMessage];
               });
               
+              // Auto-scroll without animation
               setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
+                flatListRef.current?.scrollToEnd({ animated: false });
               }, 50);
             }
           }
@@ -280,7 +281,7 @@ export default function MessageSitterScreen() {
         lastMessageTimestampRef.current = data[data.length - 1].created_at;
       }
       
-      // Auto-scroll to bottom after loading
+      // Auto-scroll to bottom after loading without animation
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
       }, 100);
@@ -318,9 +319,9 @@ export default function MessageSitterScreen() {
     setChatMessages(prev => [...prev, optimisticMessage]);
     setMessage(''); // Clear input immediately
     
-    // Auto-scroll to bottom immediately
+    // Auto-scroll to bottom immediately without animation
     setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: false });
     }, 50);
 
     try {
@@ -554,7 +555,7 @@ export default function MessageSitterScreen() {
       <Modal
         visible={showReviewModal}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={closeReviewModal}
       >
         <View style={styles.modalOverlay}>

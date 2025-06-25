@@ -77,6 +77,13 @@ export type SearchStackParamList = {
     fromDate: string;
     toDate: string;
   };
+  // Add this line:
+  MessageSitter: {
+    sitterUsername: string;
+    sitterAvatar: any;
+    sitterId: string;
+    initialMessage?: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<SearchStackParamList>();
