@@ -62,6 +62,7 @@ type HomeStackParamList = {
   PetSitterProfileView: undefined;
   EditPetSitterProfile: { sitter: Sitter };
   ViewService: { service: Service };
+  Reviews: { sitterId: string; sitterUsername: string; sitterAvatar: string | null };
 };
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'PetSitterProfileView'>;
@@ -71,6 +72,7 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
+  const [reviewCount, setReviewCount] = useState(0);
 
   const fetchPetSitterProfile = async () => {
     try {
@@ -123,6 +125,18 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
           imageUri: profileData?.avatar_url || null,
           username: profileData?.username || 'Username',
         });
+      }
+
+      // Fetch review count
+      const { count: reviewCountData, error: reviewCountError } = await supabase
+        .from('reviews')
+        .select('*', { count: 'exact', head: true })
+        .eq('to_id', user.id);
+
+      if (reviewCountError) {
+        console.error('Error fetching review count:', reviewCountError);
+      } else {
+        setReviewCount(reviewCountData || 0);
       }
 
       // Fetch services with all required fields including service_id and pet_type
@@ -191,9 +205,19 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
           }, fetchPetSitterProfile)
           .subscribe();
 
+        const reviewsSubscription = supabase.channel('reviews_changes')
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'reviews',
+            filter: `to_id=eq.${user.id}`
+          }, fetchPetSitterProfile)
+          .subscribe();
+
         return () => {
           supabase.removeChannel(sitterSubscription);
           supabase.removeChannel(servicesSubscription);
+          supabase.removeChannel(reviewsSubscription);
         };
       }
     };
@@ -221,6 +245,16 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
     navigation.navigate('ViewService', {
       service,
     });
+  };
+
+  const handleViewReviews = () => {
+    if (sitter?.id && profile) {
+      navigation.navigate('Reviews', {
+        sitterId: sitter.id,
+        sitterUsername: profile.username,
+        sitterAvatar: profile.avatar_url,
+      });
+    }
   };
 
   const getServiceImageUri = (service: Service) => {
@@ -267,7 +301,11 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
           style={styles.avatar}
         />
         <Text style={styles.username}>{profile?.username || 'Username'}</Text>
-        <Text style={styles.reviewText}>⭐ {sitter.average_stars?.toFixed(1) || '0.0'} | Reviews</Text>
+        <TouchableOpacity onPress={handleViewReviews}>
+          <Text style={styles.reviewText}>
+            ⭐ {sitter.average_stars?.toFixed(1) || '0.0'} | {reviewCount} Reviews
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <Text style={styles.label}>About Me</Text>
@@ -387,6 +425,7 @@ const styles = StyleSheet.create({
   reviewText: {
     fontSize: 14,
     color: 'black',
+    textDecorationLine: 'underline',
   },
   section: {
     marginTop: 20,

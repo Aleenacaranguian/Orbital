@@ -21,8 +21,9 @@ import EditPetSitterProfile from '../components/EditPetSitterProfile';
 import MyPosts from '../components/MyPosts';
 import ViewPetProfile from '../components/ViewPetProfile';
 import EditPetProfile from '../components/EditPetProfile';
-import ViewServiceScreen from '../components/ViewService'; // Add this import
-import EditServiceScreen from '../components/EditService'; // Add this import
+import ViewServiceScreen from '../components/ViewService';
+import EditServiceScreen from '../components/EditService';
+import ReviewsScreen from '../components/Reviews'; // Add this import
 
 // Define the Pet type to match your Supabase table
 export type Pet = {
@@ -82,7 +83,7 @@ export type Service = {
 // Export the pet type options for use in other components
 export const PET_TYPE_OPTIONS: PetType[] = ['Dog', 'Cat', 'Rabbit', 'Bird', 'Reptile', 'Fish'];
 
-// Navigation types - Updated to remove the function parameter
+// Navigation types - Updated to include Reviews
 export type HomeStackParamList = {
   ProfileScreen: { updatedService?: Service; timestamp?: number } | undefined;
   EditProfile: undefined;
@@ -92,8 +93,9 @@ export type HomeStackParamList = {
   PetSitterProfileView: undefined;
   EditPetSitterProfile: { sitter: Sitter };
   ViewService: { service: Service };
-  EditService: { service: Service }; // Removed onSave function
+  EditService: { service: Service };
   MyPosts: undefined;
+  Reviews: { sitterId: string; sitterUsername: string; sitterAvatar: string | null }; // Add this line
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -310,6 +312,11 @@ export default function Home() {
         name="MyPosts" 
         component={MyPosts} 
         options={{ title: 'My Posts' }} 
+      />
+      <Stack.Screen 
+        name="Reviews" 
+        component={ReviewsScreen} 
+        options={{ title: 'Reviews' }} 
       />
     </Stack.Navigator>
   );

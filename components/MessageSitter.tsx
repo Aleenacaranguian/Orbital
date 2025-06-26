@@ -51,6 +51,10 @@ export default function MessageSitterScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  
+  // New state for tracking conversation ownership
+  const [canReview, setCanReview] = useState(false);
+  const [conversationOwner, setConversationOwner] = useState<string | null>(null);
 
   // Review modal states
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -136,6 +140,29 @@ export default function MessageSitterScreen() {
     }
   };
 
+  // New function to determine conversation ownership
+  const determineConversationOwnership = (messages: Message[]) => {
+    if (messages.length === 0) {
+      // No messages yet, current user can potentially be the owner if they send first
+      setConversationOwner(null);
+      setCanReview(false);
+      return;
+    }
+
+    // Sort messages by creation time to find the first message
+    const sortedMessages = [...messages].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    
+    const firstMessage = sortedMessages[0];
+    const firstMessageSenderId = firstMessage.sender_id;
+    
+    setConversationOwner(firstMessageSenderId);
+    
+    // Current user can review if they sent the first message
+    setCanReview(currentUser?.id === firstMessageSenderId);
+  };
+
   // Polling fallback for when real-time doesn't work
   const startPolling = useCallback(() => {
     // Clear any existing polling
@@ -161,6 +188,7 @@ export default function MessageSitterScreen() {
               new Date(latestMessage.created_at) > new Date(lastMessageTimestampRef.current)) {
             
             setChatMessages(data);
+            determineConversationOwnership(data);
             lastMessageTimestampRef.current = latestMessage.created_at;
             
             // Auto-scroll without animation
@@ -215,7 +243,10 @@ export default function MessageSitterScreen() {
                 const exists = prev.some(msg => msg.id === newMessage.id);
                 if (exists) return prev;
                 
-                return [...prev, newMessage];
+                const updatedMessages = [...prev, newMessage];
+                // Update conversation ownership when new message arrives
+                determineConversationOwnership(updatedMessages);
+                return updatedMessages;
               });
               
               // Auto-scroll without animation
@@ -276,6 +307,9 @@ export default function MessageSitterScreen() {
 
       setChatMessages(data || []);
       
+      // Determine conversation ownership
+      determineConversationOwnership(data || []);
+      
       // Update last message timestamp for polling
       if (data && data.length > 0) {
         lastMessageTimestampRef.current = data[data.length - 1].created_at;
@@ -316,7 +350,12 @@ export default function MessageSitterScreen() {
     };
 
     // Add message immediately to UI
-    setChatMessages(prev => [...prev, optimisticMessage]);
+    setChatMessages(prev => {
+      const updatedMessages = [...prev, optimisticMessage];
+      // Update conversation ownership when sending message
+      determineConversationOwnership(updatedMessages);
+      return updatedMessages;
+    });
     setMessage(''); // Clear input immediately
     
     // Auto-scroll to bottom immediately without animation
@@ -340,16 +379,22 @@ export default function MessageSitterScreen() {
       if (error) {
         console.error('Send message error:', error);
         // Remove the optimistic message on error
-        setChatMessages(prev => prev.filter(msg => msg.id !== tempId));
+        setChatMessages(prev => {
+          const filteredMessages = prev.filter(msg => msg.id !== tempId);
+          determineConversationOwnership(filteredMessages);
+          return filteredMessages;
+        });
         Alert.alert('Error', 'Failed to send message. Please try again.');
         setMessage(messageToSend); // Restore message on error
         return;
       }
 
       // Replace optimistic message with real message
-      setChatMessages(prev => 
-        prev.map(msg => msg.id === tempId ? data : msg)
-      );
+      setChatMessages(prev => {
+        const updatedMessages = prev.map(msg => msg.id === tempId ? data : msg);
+        determineConversationOwnership(updatedMessages);
+        return updatedMessages;
+      });
 
       // Update last message timestamp
       lastMessageTimestampRef.current = data.created_at;
@@ -357,7 +402,11 @@ export default function MessageSitterScreen() {
     } catch (error) {
       console.error('Send error:', error);
       // Remove the optimistic message on error
-      setChatMessages(prev => prev.filter(msg => msg.id !== tempId));
+      setChatMessages(prev => {
+        const filteredMessages = prev.filter(msg => msg.id !== tempId);
+        determineConversationOwnership(filteredMessages);
+        return filteredMessages;
+      });
       Alert.alert('Error', 'Failed to send message');
       setMessage(messageToSend); // Restore message on error
     }
@@ -365,6 +414,10 @@ export default function MessageSitterScreen() {
 
   // Review functions
   const openReviewModal = () => {
+    if (!canReview) {
+      Alert.alert('Unable to Review', 'Only the conversation starter can leave a review.');
+      return;
+    }
     setShowReviewModal(true);
     setReviewRating(0);
     setReviewDescription('');
@@ -509,9 +562,12 @@ export default function MessageSitterScreen() {
           <View style={styles.userInfoText}>
             <Text style={styles.username}>{sitterUsername}</Text>
           </View>
-          <TouchableOpacity onPress={openReviewModal} style={styles.reviewButton}>
-            <Text style={styles.reviewButtonText}>Review and Rate</Text>
-          </TouchableOpacity>
+          {/* Only show review button if user can review */}
+          {canReview && (
+            <TouchableOpacity onPress={openReviewModal} style={styles.reviewButton}>
+              <Text style={styles.reviewButtonText}>Review and Rate</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -551,68 +607,71 @@ export default function MessageSitterScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Review Modal */}
-      <Modal
-        visible={showReviewModal}
-        transparent
-        animationType="fade"
-        onRequestClose={closeReviewModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.reviewModalContent}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.reviewModalHeader}>
-                <Text style={styles.reviewModalTitle}>Review {sitterUsername}</Text>
-                <TouchableOpacity onPress={closeReviewModal}>
-                  <Text style={styles.closeButton}>✕</Text>
-                </TouchableOpacity>
-              </View>
+      {/* Review Modal - Only render if user can review */}
+      {canReview && (
+        <Modal
+          visible={showReviewModal}
+          transparent
+          animationType="fade"
+          onRequestClose={closeReviewModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.reviewModalContent}>
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.reviewModalHeader}>
+                  <Text style={styles.reviewModalTitle}>Review {sitterUsername}</Text>
+                  <TouchableOpacity onPress={closeReviewModal}>
+                    <Text style={styles.closeButton}>✕</Text>
+                  </TouchableOpacity>
+                </View>
 
-              <Text style={styles.reviewLabel}>How would you rate this sitter?</Text>
-              <View style={styles.starsContainer}>
-                {renderStars()}
-              </View>
+                <Text style={styles.reviewLabel}>How would you rate this sitter?</Text>
+                <View style={styles.starsContainer}>
+                  {renderStars()}
+                </View>
 
-              <Text style={styles.reviewLabel}>Share your experience (optional)</Text>
-              <TextInput
-                style={styles.reviewTextInput}
-                multiline
-                value={reviewDescription}
-                onChangeText={setReviewDescription}
-                placeholder="Tell others about your experience with this sitter..."
-                placeholderTextColor="#999"
-                textAlignVertical="top"
-              />
+                <Text style={styles.reviewLabel}>Share your experience (optional)</Text>
+                <TextInput
+                  style={styles.reviewTextInput}
+                  multiline
+                  value={reviewDescription}
+                  onChangeText={setReviewDescription}
+                  placeholder="Tell others about your experience with this sitter..."
+                  placeholderTextColor="#999"
+                  textAlignVertical="top"
+                />
 
-              <View style={styles.reviewButtonsContainer}>
-                <TouchableOpacity
-                  style={styles.cancelReviewButton}
-                  onPress={closeReviewModal}
-                  disabled={submittingReview}
-                >
-                  <Text style={styles.cancelReviewButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity
-                  style={[
-                    styles.submitReviewButton,
-                    (submittingReview || reviewRating === 0) && styles.submitReviewButtonDisabled
-                  ]}
-                  onPress={submitReview}
-                  disabled={submittingReview || reviewRating === 0}
-                >
-                  <Text style={styles.submitReviewButtonText}>
-                    {submittingReview ? 'Submitting...' : 'Submit Review'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+                <View style={styles.reviewButtonsContainer}>
+                  <TouchableOpacity
+                    style={styles.cancelReviewButton}
+                    onPress={closeReviewModal}
+                    disabled={submittingReview}
+                  >
+                    <Text style={styles.cancelReviewButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[
+                      styles.submitReviewButton,
+                      (submittingReview || reviewRating === 0) && styles.submitReviewButtonDisabled
+                    ]}
+                    onPress={submitReview}
+                    disabled={submittingReview || reviewRating === 0}
+                  >
+                    <Text style={styles.submitReviewButtonText}>
+                      {submittingReview ? 'Submitting...' : 'Submit Review'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
