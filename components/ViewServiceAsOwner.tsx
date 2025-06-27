@@ -198,7 +198,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
       // Show success alert without navigation
       Alert.alert(
         'Message Sent!', 
-        'Your message has been sent to the sitter. You can continue the conversation in your Messages tab.',
+        'Your message has been sent to the sitter. You can continue the conversation in your Messaging tab.',
         [
           {
             text: 'OK',
