@@ -124,7 +124,6 @@ const EditProfile = () => {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        // THIS IS THE KEY CHANGE: Use an array of strings
         mediaTypes: ['images'], 
         allowsEditing: true,
         aspect: [1, 1],
