@@ -434,6 +434,7 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     marginRight: 15,
+    marginTop: 5,
     borderRadius: 50,
     borderWidth: 2,
     borderColor: 'transparent',
