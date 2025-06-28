@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -177,12 +177,14 @@ const EditProfile = () => {
           return;
         }
 
-        Alert.alert('Success', 'Profile updated successfully');
-        if (navigation.canGoBack()) {
-          navigation.goBack();
-        } else {
-          navigation.navigate('HomeMain' as never);
-        }
+        Alert.alert('Success', 'Profile updated successfully', [
+          {
+            text: 'OK',
+            onPress: () => {
+              navigation.goBack();
+            }
+          }
+        ]);
       } else {
         Alert.alert('Error', 'User not authenticated.');
       }
@@ -198,6 +200,33 @@ const EditProfile = () => {
     setProfile(prev => ({ ...prev, [field]: value }));
   };
 
+  // Set up the navigation header with <Back and Done buttons
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ marginLeft: 15 }}
+        >
+          <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>＜Back</Text>
+        </TouchableOpacity>
+      ),
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={saving}
+          style={{ marginRight: 15, opacity: saving ? 0.5 : 1 }}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#007AFF" />
+          ) : (
+            <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>Done</Text>
+          )}
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, saving, profile]);
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -208,33 +237,6 @@ const EditProfile = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => {
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              navigation.navigate('HomeMain' as never);
-            }
-          }}
-          style={styles.headerButton}
-        >
-          <Text style={styles.closeButton}>✕</Text>
-        </TouchableOpacity>
-
-        <View style={styles.titleSpace} />
-
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={saving}
-          style={styles.headerButton}
-        >
-          <Text style={[styles.doneButton, saving && styles.disabledButton]}>
-            {saving ? 'Saving...' : 'Done'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.photoSection}>
           <Avatar url={profile.avatar_url} size={120} key={profile.avatar_url} />
@@ -321,30 +323,6 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    height: 60,
-    paddingHorizontal: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerButton: {
-    padding: 10,
-  },
-  closeButton: {
-    fontSize: 30,
-    color: '#000',
-  },
-  doneButton: {
-    fontSize: 18,
-    color: '#007AFF',
-  },
-  disabledButton: {
-    color: '#aaa',
-  },
-  titleSpace: {
-    flex: 1,
   },
   scrollContainer: {
     flex: 1,

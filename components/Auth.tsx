@@ -8,7 +8,8 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
-  TouchableOpacity
+  TouchableOpacity,
+  ScrollView
 } from 'react-native'
 import { supabase } from '../lib/supabase'
 import { Input } from '@rneui/themed'
@@ -52,64 +53,72 @@ export default function Auth() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF3E3" />
+      
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          <View style={styles.headerSection}>
+            <Text style={styles.appTitle}>PAWPALS</Text>
+            <Text style={styles.subtitle}>
+              CONNECT, SHARE AND FIND THE PERFECT{'\n'}
+              COMPANION FOR YOUR FURRY FRIEND
+            </Text>
+          </View>
 
-      <View style={styles.content}>
-        <Text style={styles.appTitle}>PAWPALS</Text>
+          <View style={styles.formSection}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <Input
+                placeholder="email@address.com"
+                onChangeText={(text: string) => setEmail(text)}
+                value={email}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                inputContainerStyle={styles.inputContainerStyle}
+              />
+            </View>
 
-        <Text style={styles.subtitle}>
-          CONNECT, SHARE AND FIND THE PERFECT{'\n'}
-          COMPANION FOR YOUR FURRY FRIEND,{'\n'}
-          ANYTIME, ANYWHERE.
-        </Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <Input
+                placeholder="Password"
+                secureTextEntry
+                onChangeText={(text: string) => setPassword(text)}
+                value={password}
+                autoCapitalize="none"
+                inputContainerStyle={styles.inputContainerStyle}
+              />
+            </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Email</Text>
-          <Input
-            placeholder="email@address.com"
-            onChangeText={(text: string) => setEmail(text)}
-            value={email}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            inputContainerStyle={styles.inputContainerStyle}
-          />
+            <TouchableOpacity
+              style={[styles.button, styles.signInButton]}
+              onPress={signInWithEmail}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Sign In</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.signUpButton]}
+              onPress={signUpWithEmail}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Sign Up</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.petImagesContainer}>
+            <Image
+              source={require('../assets/petstogether.png')}
+              style={styles.petImage}
+              resizeMode="contain"
+            />
+          </View>
         </View>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <Input
-            placeholder="Password"
-            secureTextEntry
-            onChangeText={(text: string) => setPassword(text)}
-            value={password}
-            autoCapitalize="none"
-            inputContainerStyle={styles.inputContainerStyle}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={[styles.button, styles.signInButton]}
-          onPress={signInWithEmail}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.button, styles.signUpButton]}
-          onPress={signUpWithEmail}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>Sign Up</Text>
-        </TouchableOpacity>
-
-        <View style={styles.petImagesContainer}>
-          <Image
-            source={require('../assets/petstogether.png')}
-            style={styles.petImage}
-            resizeMode="contain"
-          />
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -119,50 +128,60 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF3E3',
   },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   content: {
-    flex: 1,
-    paddingHorizontal: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+  },
+  headerSection: {
     alignItems: 'center',
-    paddingTop: 40,
+    marginBottom: 30,
   },
   appTitle: {
-    fontSize: 70,
+    fontSize: 48,
     fontWeight: 'bold',
     color: '#8B4513',
-    marginBottom: 2,
-    letterSpacing: 2,
+    marginBottom: 8,
+    letterSpacing: 1.5,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6B5B47',
     textAlign: 'center',
-    marginBottom: 5,
-    lineHeight: 16,
+    lineHeight: 14,
     fontWeight: '500',
+    paddingHorizontal: 10,
+  },
+  formSection: {
+    marginBottom: 30,
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   inputContainerStyle: {
     backgroundColor: 'white',
     borderRadius: 8,
     paddingHorizontal: 10,
     borderBottomWidth: 0,
+    minHeight: 40,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#8B7355',
     fontWeight: '500',
     marginBottom: 4,
-    marginLeft: 10,
+    marginLeft: 6,
   },
   button: {
     width: '100%',
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   signInButton: {
     backgroundColor: '#D2691E',
@@ -172,17 +191,16 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   petImagesContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    paddingBottom: 30,
-    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   petImage: {
-    width: '100%',
-    height: 300,
+    width: '90%',
+    height: 200,
+    maxHeight: 220,
   },
 })
