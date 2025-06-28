@@ -148,13 +148,65 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
     return defaultProfileImage;
   };
 
+  const handleViewReviews = () => {
+    if (!sitterInfo?.profile) {
+      Alert.alert('Error', 'Unable to load sitter information');
+      return;
+    }
+
+    // Navigate to Reviews screen with required parameters
+    navigation.navigate('Reviews', {
+      sitterId: sitterInfo.profile.id,
+      sitterUsername: sitterInfo.profile.username,
+      sitterAvatar: sitterInfo.profile.avatar_url || null,
+    });
+  };
+
   const createDefaultMessage = () => {
-    const petNames = selectedPets?.map((pet: Pet) => pet.name).join(', ') || 'My pet(s)';
     const serviceName = service.name_of_service || service.service_type;
     const fromDateStr = fromDate ? new Date(fromDate).toLocaleDateString() : 'TBD';
     const toDateStr = toDate ? new Date(toDate).toLocaleDateString() : 'TBD';
     
-    return `Hello ${sitterInfo?.profile?.username || 'there'}! I would like to inquire about your ${serviceName} service.\n\nBooking Details:\n• Pet(s): ${petNames}\n• Service: ${serviceName}\n• From: ${fromDateStr}\n• To: ${toDateStr}\n• Rate: $${service.price || 'TBD'} per hour\n\nI'm interested in booking this service. Could you please let me know your availability?`;
+    // Create detailed pet information
+    const petDetails = selectedPets?.map((pet: Pet) => {
+      let petInfo = `• ${pet.name}`;
+      
+      // Add pet type and breed
+      if (pet.pet_type) {
+        petInfo += ` (${pet.pet_type}`;
+        if (pet.breed) {
+          petInfo += `, ${pet.breed}`;
+        }
+        petInfo += ')';
+      }
+      
+      // Add size on new line
+      if (pet.size) {
+        petInfo += `\n  size: ${pet.size}`;
+      }
+      
+      // Add health and behavior information on new lines
+      petInfo += `\n  sterilised: ${pet.sterilised ?? 'null'}`;
+      petInfo += `\n  transmissible health issues: ${pet.transmissible_health_issues ?? 'null'}`;
+      petInfo += `\n  friendly with dogs: ${pet.friendly_with_dogs ?? 'null'}`;
+      petInfo += `\n  friendly with cats: ${pet.friendly_with_cats ?? 'null'}`;
+      petInfo += `\n  friendly with children: ${pet.friendly_with_children ?? 'null'}`;
+      
+      return petInfo;
+    }).join('\n') || 'My pet(s)';
+    
+    return `Hello ${sitterInfo?.profile?.username || 'there'}! I would like to inquire about your ${serviceName} service.
+  
+  Booking Details:
+  • Service: ${serviceName}
+  • From: ${fromDateStr}
+  • To: ${toDateStr}
+  • Rate: $${service.price || 'TBD'} per hour
+  
+  Pet Information:
+  ${petDetails}
+  
+  I'm interested in booking this service. Could you please let me know your availability and if you have any questions about my pet(s)?`;
   };
 
   const handleSendMessage = async () => {
@@ -216,25 +268,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
     }
   };
 
-
-
-
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-    
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<Text key={i} style={styles.goldStar}>★</Text>);
-    }
-    
-    if (hasHalfStar) {
-      stars.push(<Text key="half" style={styles.goldStar}>☆</Text>);
-    }
-    
-    return stars;
-  };
-
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -259,8 +292,11 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
           <View style={styles.sitterDetails}>
             <Text style={styles.sitterName}>{sitterInfo?.profile?.username || 'Unknown Sitter'}</Text>
             <View style={styles.ratingRow}>
-              {renderStars(sitterInfo?.petSitter?.average_stars || 0)}
-              <Text style={styles.ratingNumber}>({sitterInfo?.petSitter?.average_stars?.toFixed(1) || '0.0'})</Text>
+              <Text style={styles.goldStar}>★</Text>
+              <Text style={styles.ratingNumber}>{sitterInfo?.petSitter?.average_stars?.toFixed(1) || '0.0'}</Text>
+              <TouchableOpacity onPress={handleViewReviews} style={styles.viewReviewsButton}>
+                <Text style={styles.viewReviewsText}>View reviews</Text>
+              </TouchableOpacity>
             </View>
             {sitterInfo?.petSitter?.years_of_experience && (
               <Text style={styles.experience}>{sitterInfo.petSitter.years_of_experience} years experience</Text>
@@ -475,12 +511,20 @@ const styles = StyleSheet.create({
   goldStar: {
     color: '#FFD700',
     fontSize: 16,
-    marginRight: 1,
+    marginRight: 4,
   },
   ratingNumber: {
     fontSize: 14,
     color: '#666',
-    marginLeft: 4,
+    marginRight: 12,
+  },
+  viewReviewsButton: {
+    paddingVertical: 2,
+  },
+  viewReviewsText: {
+    fontSize: 14,
+    color: '#007AFF',
+    textDecorationLine: 'underline',
   },
   experience: {
     fontSize: 12,
