@@ -125,7 +125,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     }
   }
 
-  // Upload image to Supabase storage using base64 conversion (same as EditPetProfile)
+  
   const uploadServiceImage = async (imageUri: string, serviceName: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -134,12 +134,12 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       const fileExt = imageUri.split('.').pop();
       const fileName = `${service.service_id}_${serviceName || 'service'}_${Date.now()}.${fileExt}`;
 
-      // Read file as base64 string (same as EditPetProfile approach)
+      
       const fileBase64 = await FileSystem.readAsStringAsync(imageUri, { 
         encoding: FileSystem.EncodingType.Base64 
       });
       
-      // Convert base64 to Uint8Array for Supabase storage
+      
       const byteCharacters = atob(fileBase64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -194,7 +194,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
   
-      // Delete old image if exists
+
       if (service.service_url) {
         try {
           await supabase.storage
@@ -205,7 +205,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
         }
       }
 
-      // Upload new image using the same method as EditPetProfile
+     
       const newServiceUrl = await uploadServiceImage(imageUri, nameOfService);
   
       const { error: updateError } = await supabase
@@ -267,7 +267,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
         {
           text: 'OK',
           onPress: () => {
-            // Navigate back to ProfileScreen - it will refresh via real-time subscription
+        
             navigation.goBack();
           }
         }

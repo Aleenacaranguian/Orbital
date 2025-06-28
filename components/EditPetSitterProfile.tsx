@@ -119,18 +119,6 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
         return;
       }
       
-      // Test connection to services table
-      const { data: testData, error: testError } = await supabase
-        .from('services')
-        .select('*')
-        .limit(1);
-      
-      if (testError) {
-        console.error('Test query failed:', testError);
-        Alert.alert('Database Error', `Cannot access services table: ${testError.message}`);
-        setLoading(false);
-        return;
-      }
       
       // Fetch user's services
       const { data: servicesData, error: servicesError } = await supabase
@@ -163,7 +151,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
       } else {
         setServices(servicesData || []);
         
-        // Fetch public URLs for service images
+       
         if (servicesData && servicesData.length > 0) {
           const imageUrls: { [key: string]: string } = {};
           
@@ -193,7 +181,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
     fetchServices();
   }, []);
 
-  // Refresh services when returning from EditService screen
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchServices();
@@ -549,7 +537,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
   },
-  // Fixed header button styles
+
   headerButton: {
     paddingVertical: 8,
     paddingHorizontal: 8,

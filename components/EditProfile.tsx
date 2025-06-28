@@ -32,7 +32,7 @@ const EditProfile = () => {
     email: '',
   });
 
-  // Hide the navigation header when component mounts
+  
   useEffect(() => {
     navigation.setOptions({
       headerShown: false
@@ -89,12 +89,12 @@ const EditProfile = () => {
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Read file as base64 string
+      
       const fileBase64 = await FileSystem.readAsStringAsync(uri, { 
         encoding: FileSystem.EncodingType.Base64 
       });
       
-      // Convert base64 to Uint8Array for Supabase storage
+     
       const byteCharacters = atob(fileBase64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50, // Add padding to avoid status bar overlap
+    paddingTop: 50, 
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',

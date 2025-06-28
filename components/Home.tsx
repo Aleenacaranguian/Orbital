@@ -78,8 +78,6 @@ export type Service = {
   accepts_pets_with_transmissible_health_issues?: boolean;
 };
 
-// Export the pet type options for use in other components
-export const PET_TYPE_OPTIONS: PetType[] = ['Dog', 'Cat', 'Rabbit', 'Bird', 'Reptile', 'Fish'];
 
 
 export type HomeStackParamList = {

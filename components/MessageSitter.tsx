@@ -232,7 +232,7 @@ export default function MessageSitterScreen() {
               (newMessage.sender_id === currentUser.id && newMessage.recipient_id === sitterIdString) ||
               (newMessage.sender_id === sitterIdString && newMessage.recipient_id === currentUser.id);
             
-            // Only add if it's relevant and not from current user (to avoid duplicates with optimistic updates)
+      
             if (isRelevantMessage && newMessage.sender_id !== currentUser.id) {
               setChatMessages(prev => {
                 // Check for duplicates
@@ -360,7 +360,7 @@ export default function MessageSitterScreen() {
     }, 50);
 
     try {
-      // Send to database
+    
       const { data, error } = await supabase
         .from('messages')
         .insert({
@@ -513,7 +513,7 @@ export default function MessageSitterScreen() {
     );
   };
 
-  // Show error state
+
   if (error) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -529,7 +529,7 @@ export default function MessageSitterScreen() {
     );
   }
 
-  // Show loading state
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>

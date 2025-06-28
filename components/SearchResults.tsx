@@ -280,7 +280,7 @@ export default function SearchResultsScreen({ route }: Props) {
     })}`;
   };
 
-  // Get pet image URI 
+ 
   const getPetImageUri = (pet: Pet) => {
     if (pet.pet_url) {
       if (pet.pet_url.startsWith('http')) {
@@ -294,28 +294,16 @@ export default function SearchResultsScreen({ route }: Props) {
     return require('../assets/default-profile.png');
   };
 
-  // Get service image URI - Fixed to use correct fallback logic
+ 
   const getServiceImageUri = (service: Service) => {
     if (service.service_url) {
-      if (service.service_url.startsWith('http')) {
-        return { uri: service.service_url };
-      }
       const { data } = supabase.storage
         .from('services')
         .getPublicUrl(service.service_url);
       return { uri: data.publicUrl };
     }
     
-    // Fallback to sitter avatar if no service image
-    if (service.sitter_image) {
-      if (service.sitter_image.startsWith('http')) {
-        return { uri: service.sitter_image };
-      }
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(service.sitter_image);
-      return { uri: data.publicUrl };
-    }
+  
     
     // Final fallback to default pet sitter image
     return require('../assets/petsitter.png');

@@ -1,4 +1,3 @@
-//editpetprofile.tsx
 import React, { useState, useLayoutEffect } from 'react';
 import {
   View,
@@ -63,7 +62,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
     { label: '>40kg', value: '>40kg' },
   ];
 
-  // Get pet image URL from Supabase storage
+  
   const getPetImageUrl = (petUrlPath: string | null) => {
     if (!petUrlPath) return null;
     
@@ -74,7 +73,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
     return data.publicUrl;
   };
 
-  // Upload image to Supabase storage using base64 conversion (same as MyPets)
+  
   const uploadPetImage = async (imageUri: string, petName: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -83,12 +82,12 @@ export default function EditPetProfile({ route, navigation }: Props) {
       const fileExt = imageUri.split('.').pop();
       const fileName = `${user.id}_${petName}_${Date.now()}.${fileExt}`;
 
-      // Read file as base64 string (same as MyPets approach)
+      
       const fileBase64 = await FileSystem.readAsStringAsync(imageUri, { 
         encoding: FileSystem.EncodingType.Base64 
       });
       
-      // Convert base64 to Uint8Array for Supabase storage
+     
       const byteCharacters = atob(fileBase64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -111,7 +110,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
     }
   };
 
-  // Function to pick image from gallery or camera
+ 
   const pickImage = async (source: 'camera' | 'gallery') => {
     try {
       let result;
@@ -151,7 +150,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
     }
   };
 
-  // Function to upload image using the same logic as MyPets
+  
   const uploadImage = async (uri: string) => {
     try {
       setImageUploading(true);
@@ -170,10 +169,10 @@ export default function EditPetProfile({ route, navigation }: Props) {
         }
       }
 
-      // Upload new image using the same method as MyPets
+     
       const newPetUrl = await uploadPetImage(uri, pet.name);
       
-      // Store the storage path (not the full URL)
+     
       setPetUrl(newPetUrl);
       Alert.alert('Success', 'Image uploaded successfully!');
       
@@ -185,7 +184,6 @@ export default function EditPetProfile({ route, navigation }: Props) {
     }
   };
 
-  // Function to show image picker options
   const showImagePicker = () => {
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -218,7 +216,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
     }
   };
 
-  // Function to remove photo
+
   const removePhoto = async () => {
     if (petUrl) {
       try {
@@ -238,7 +236,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Validate birthday format if provided (YYYY-MM-DD)
+        //Validate birthday
         if (birthday && !isValidDate(birthday)) {
           Alert.alert('Error', 'Please enter birthday in YYYY-MM-DD format or leave it empty.');
           setSaving(false);
@@ -303,7 +301,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
     return defaultAvatar;
   };
 
-  // Set header right button
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (

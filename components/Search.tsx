@@ -62,7 +62,7 @@ export type Service = {
   sitter_image?: string;
 };
 
-// Navigation types for the Search stack
+
 export type SearchStackParamList = {
   SearchScreen: undefined;
   SearchResults: {
@@ -118,7 +118,6 @@ function SearchScreen() {
   const [showToPicker, setShowToPicker] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user's pets when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchUserPets();
@@ -180,7 +179,7 @@ function SearchScreen() {
     }
   };
 
-  // Get selected pet object
+  // Get selected pet
   const getSelectedPet = (): Pet | null => {
     if (!selectedPetId) return null;
     return userPets.find(pet => getPetUniqueId(pet) === selectedPetId) || null;
@@ -215,9 +214,9 @@ function SearchScreen() {
   const getPetImageUri = (pet: Pet) => {
     if (pet.pet_url) {
  
-      // If storing storage paths, construct the full URL using correct bucket name
+
       const { data } = supabase.storage
-        .from('my-pets') // Fixed bucket name to match your schema
+        .from('my-pets') 
         .getPublicUrl(pet.pet_url);
       return { uri: data.publicUrl };
     }

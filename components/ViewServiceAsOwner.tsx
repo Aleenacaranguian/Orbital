@@ -164,7 +164,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   const createDefaultMessage = () => {
     const serviceName = service.name_of_service || service.service_type;
   
-    // ✅ Use toLocaleString() to include both date and time
     const fromDateStr = fromDate ? new Date(fromDate).toLocaleString() : 'TBD';
     const toDateStr = toDate ? new Date(toDate).toLocaleString() : 'TBD';
   
