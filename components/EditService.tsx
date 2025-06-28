@@ -125,20 +125,25 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     }
   }
 
-  
   const uploadServiceImage = async (imageUri: string, serviceName: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
-
+  
       const fileExt = imageUri.split('.').pop();
-      const fileName = `${service.service_id}_${serviceName || 'service'}_${Date.now()}.${fileExt}`;
-
       
+      // Sanitize the service name to create a valid filename
+      const sanitizedServiceName = (serviceName || 'service')
+        .replace(/[^a-zA-Z0-9]/g, '_') // Replace any non-alphanumeric character with underscore
+        .replace(/_+/g, '_') // Replace multiple underscores with single underscore
+        .replace(/^_|_$/g, '') // Remove leading/trailing underscores
+        .toLowerCase(); // Convert to lowercase for consistency
+      
+      const fileName = `${service.service_id}_${sanitizedServiceName}_${Date.now()}.${fileExt}`;
+  
       const fileBase64 = await FileSystem.readAsStringAsync(imageUri, { 
         encoding: FileSystem.EncodingType.Base64 
       });
-      
       
       const byteCharacters = atob(fileBase64);
       const byteNumbers = new Array(byteCharacters.length);
@@ -146,14 +151,14 @@ export default function EditServiceScreen({ route, navigation }: Props) {
         byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
       const byteArray = new Uint8Array(byteNumbers);
-
+  
       const { data, error } = await supabase.storage
         .from('services')
         .upload(fileName, byteArray, {
           cacheControl: '3600',
           upsert: true
         });
-
+  
       if (error) throw error;
       return data.path;
     } catch (error) {
