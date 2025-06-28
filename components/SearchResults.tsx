@@ -1,4 +1,3 @@
-//searchresults.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -16,10 +15,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { SearchStackParamList, Pet, Service } from './Search';
 import { supabase } from '../lib/supabase';
 
-// Props type for this screen
+
 type Props = NativeStackScreenProps<SearchStackParamList, 'SearchResults'>;
 
-// Define Sitter type to match your pet sitter table
+//Pet sitter attributes 
 type PetSitter = {
   id: string;
   about_me?: string;
@@ -32,7 +31,7 @@ type PetSitter = {
   created_at?: string;
 };
 
-// Profile type to match your profiles table
+// profile attributes 
 type Profile = {
   id: string;
   username: string;
@@ -46,7 +45,7 @@ type Profile = {
   avatar_url?: string;
 };
 
-// Custom Slider Component
+// Custom slider component
 interface CustomSliderProps {
   minimumValue: number;
   maximumValue: number;
@@ -152,7 +151,7 @@ export default function SearchResultsScreen({ route }: Props) {
         return;
       }
 
-      // Get unique user IDs for fetching additional data
+    
       const userIds = servicesData?.map(service => service.id) || [];
       
       // Fetch profiles for all service providers
@@ -165,7 +164,6 @@ export default function SearchResultsScreen({ route }: Props) {
         console.error('Error fetching profiles:', profilesError);
       }
 
-      // Fetch pet_sitter details for all service providers
       const { data: petSittersData, error: petSittersError } = await supabase
         .from('pet_sitter')
         .select('*')
@@ -175,7 +173,7 @@ export default function SearchResultsScreen({ route }: Props) {
         console.error('Error fetching pet sitters:', petSittersError);
       }
 
-      // Fixed reviews query - using to_id and selecting the correct columns
+      // Reviews query using to_id 
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select('to_id, stars_int')
@@ -185,12 +183,11 @@ export default function SearchResultsScreen({ route }: Props) {
         console.error('Error fetching reviews:', reviewsError);
       }
 
-      // Create lookup maps
       const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
       const petSittersMap = new Map(petSittersData?.map(sitter => [sitter.id, sitter]) || []);
       const reviewsMap = new Map<string, number[]>();
       
-      // Group reviews by to_id (the service provider being reviewed)
+      // Group reviews by to_id 
       reviewsData?.forEach(review => {
         if (!reviewsMap.has(review.to_id)) {
           reviewsMap.set(review.to_id, []);
@@ -200,15 +197,15 @@ export default function SearchResultsScreen({ route }: Props) {
         }
       });
 
-      // Transform data to match our Service type
+   
       const transformedServices: Service[] = (servicesData || []).map(service => {
-        // Get profile data for this service provider
+       
         const profile = profilesMap.get(service.id);
         
-        // Get pet sitter data for this service provider
+    
         const petSitter = petSittersMap.get(service.id);
         
-        // Get reviews data for this service provider
+        // Get reviews data for this sitter
         const userReviews = reviewsMap.get(service.id) || [];
         const averageRating = userReviews.length > 0 
           ? userReviews.reduce((sum, stars) => sum + stars, 0) / userReviews.length 
@@ -233,10 +230,9 @@ export default function SearchResultsScreen({ route }: Props) {
           sitter_present_throughout_service: service.sitter_present_throughout_service,
           accepts_unsterilised_pets: service.accepts_unsterilised_pets,
           accepts_pets_with_transmissible_health_issues: service.accepts_pets_with_transmissible_health_issues,
-          // Additional fields for display
           sitter_name: profile?.username || 'Unknown Sitter',
           sitter_rating: averageRating,
-          sitter_image: profile?.avatar_url, // Use profile avatar
+          sitter_image: profile?.avatar_url, 
         };
       });
 
@@ -284,7 +280,7 @@ export default function SearchResultsScreen({ route }: Props) {
     })}`;
   };
 
-  // Get pet image URI - Fixed to use correct storage bucket
+  // Get pet image URI 
   const getPetImageUri = (pet: Pet) => {
     if (pet.pet_url) {
       if (pet.pet_url.startsWith('http')) {
@@ -300,7 +296,6 @@ export default function SearchResultsScreen({ route }: Props) {
 
   // Get service image URI - Fixed to use correct fallback logic
   const getServiceImageUri = (service: Service) => {
-    // First try to use the service's own image
     if (service.service_url) {
       if (service.service_url.startsWith('http')) {
         return { uri: service.service_url };
@@ -326,7 +321,7 @@ export default function SearchResultsScreen({ route }: Props) {
     return require('../assets/petsitter.png');
   };
 
-  // Render star rating with emoji
+  // Star rating with emoji
   const renderStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -434,7 +429,6 @@ export default function SearchResultsScreen({ route }: Props) {
         </ScrollView>
       </View>
 
-      {/* Filter Modal */}
       {showFilter && (
         <Modal transparent animationType="slide" visible={showFilter}>
           <View style={styles.modalOverlay}>

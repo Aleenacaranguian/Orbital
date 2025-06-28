@@ -302,7 +302,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
   }, [
     navigation,
     name,
-    breed, // Add breed to dependencies
+    breed,
     birthday,
     petType,
     size,
@@ -322,7 +322,6 @@ export default function EditPetProfile({ route, navigation }: Props) {
       extraScrollHeight={100}
       enableOnAndroid={true}
     >
-      {/* Photo Section - Similar to EditProfile */}
       <View style={styles.photoSection}>
         <View style={styles.avatarContainer}>
           <Image
@@ -349,7 +348,6 @@ export default function EditPetProfile({ route, navigation }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Form Container */}
       <View style={styles.formContainer}>
         <Text style={styles.label}>Pet Name</Text>
         <TextInput
@@ -420,7 +418,6 @@ export default function EditPetProfile({ route, navigation }: Props) {
           />
         </View>
 
-        {/* Toggle switches */}
         <View style={styles.toggleContainer}>
           <Text style={styles.toggleLabel}>Sterilised</Text>
           <Switch

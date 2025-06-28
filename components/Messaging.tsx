@@ -17,7 +17,7 @@ import { supabase } from '../lib/supabase';
 
 const defaultAvatar = require('../assets/default-profile.png');
 
-// Complete MessagingStackParamList type definition for Messaging.tsx
+
 export type MessagingStackParamList = {
   ChatList: undefined;
   MessageSitter: {
@@ -54,7 +54,7 @@ function ChatListScreen() {
     fetchCurrentUser();
   }, []);
 
-  // Refetch chats when screen comes into focus
+  
   useFocusEffect(
     React.useCallback(() => {
       if (currentUser) {
@@ -117,7 +117,6 @@ function ChatListScreen() {
         return;
       }
 
-      // Create a map of user profiles for quick lookup
       const profileMap = new Map<string, any>();
       profiles?.forEach((profile) => {
         profileMap.set(profile.id, profile);

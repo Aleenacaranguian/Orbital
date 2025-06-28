@@ -1,4 +1,3 @@
-//editservice.tsx
 import React, { useState, useLayoutEffect, useEffect } from 'react';
 import {
   View,
@@ -20,15 +19,15 @@ import * as ImagePicker from 'expo-image-picker';
 type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
 
 type Service = {
-  service_id: string; // New primary key (UUID)
-  id: string; // Foreign key referencing user
+  service_id: string;
+  id: string;
   service_type: string;
   service_url?: string | null;
   created_at?: string;
   name_of_service?: string;
   price?: string;
   pet_preferences?: string;
-  pet_type?: PetType | null; // New field
+  pet_type?: PetType | null;
   housing_type?: string;
   service_details?: string;
   accepts_pets_with_transmissible_health_issues?: boolean;
@@ -42,7 +41,7 @@ type Service = {
 
 type HomeStackParamList = {
   EditService: { service: Service };
-  ProfileScreen: { updatedService?: Service; timestamp?: number };
+  ProfileScreen: undefined; 
 };
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'EditService'>;
@@ -52,18 +51,16 @@ const defaultServiceImage = require('../assets/petsitter.png');
 export default function EditServiceScreen({ route, navigation }: Props) {
   const { service } = route.params;
   
-  // Loading states
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
 
-  // Basic fields
   const [nameOfService, setNameOfService] = useState(service.name_of_service || '');
   const [price, setPrice] = useState(service.price || '');
   const [petPreferences, setPetPreferences] = useState(service.pet_preferences || '');
   const [serviceDetails, setServiceDetails] = useState(service.service_details || '');
   const [serviceImageUrl, setServiceImageUrl] = useState<string | null>(null);
 
-  // Service Type dropdown
+  // Allowed service types
   const [openType, setOpenType] = useState(false);
   const [serviceType, setServiceType] = useState(service.service_type);
   const typeOptions = [
@@ -77,7 +74,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     { label: 'Training', value: 'Training' }
   ];
 
-  // Pet Type dropdown
+  // Allowed pet types 
   const [openPetType, setOpenPetType] = useState(false);
   const [petType, setPetType] = useState<PetType | null>(service.pet_type || null);
   const petTypeOptions = [
@@ -89,7 +86,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     { label: 'Fish', value: 'Fish' }
   ];
 
-  // Service Environment toggles - fixed field names to match database schema
+  // Service environments
   const [noOtherDogsPresent, setNoOtherDogsPresent] = useState(service.no_other_dogs_present || false);
   const [noOtherCatsPresent, setNoOtherCatsPresent] = useState(service.no_other_cats_present || false);
   const [noChildren, setNoChildren] = useState(service.no_children_present || false);
@@ -98,7 +95,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
   const [acceptsUnsterilisedPets, setAcceptsUnsterilisedPets] = useState(service.accepts_unsterilised_pets || false);
   const [acceptsTransmissiblePets, setAcceptsTransmissiblePets] = useState(service.accepts_pets_with_transmissible_health_issues || false);
 
-  // Housing Type toggles (only one can be ON at once)
+  // Allowed housing types
   const housingTypes = [
     'Apartment',
     'HDB',
@@ -119,7 +116,6 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     }
   }, [service.service_url]);
 
-  // For housing toggles: turn off all others when one is selected
   function toggleHousingType(selectedType: string) {
     if (housingType === selectedType) {
       setHousingType('NA');
@@ -160,15 +156,12 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
   
-      // Create file name - using service_id instead of id
       const fileExt = imageUri.split('.').pop();
       const fileName = `${service.service_id}_${nameOfService || 'service'}_${Date.now()}.${fileExt}`;
   
-      // Convert uri to blob for upload (your original approach was correct)
       const response = await fetch(imageUri);
       const blob = await response.blob();
   
-      // Upload to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('services')
         .upload(fileName, blob, {
@@ -181,7 +174,6 @@ export default function EditServiceScreen({ route, navigation }: Props) {
         throw uploadError;
       }
   
-      // Update service record using service_id as primary key
       const { error: updateError } = await supabase
         .from('services')
         .update({ service_url: fileName })
@@ -192,7 +184,6 @@ export default function EditServiceScreen({ route, navigation }: Props) {
         throw updateError;
       }
   
-      // Update local state
       const { data: imageData } = supabase.storage
         .from('services')
         .getPublicUrl(fileName);
@@ -206,13 +197,11 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     }
   };
 
-  
-
   const saveService = async () => {
     try {
       setLoading(true);
   
-      // Validate required fields
+    
       if (!nameOfService.trim()) {
         Alert.alert('Error', 'Service name is required');
         return;
@@ -236,40 +225,19 @@ export default function EditServiceScreen({ route, navigation }: Props) {
           no_other_dogs_present: noOtherDogsPresent,
           no_other_cats_present: noOtherCatsPresent,
         })
-        .eq('service_id', service.service_id); // Use service_id as primary key
+        .eq('service_id', service.service_id);
   
       if (error) throw error;
   
-      // Create updated service object
-      const updatedService: Service = {
-        ...service,
-        service_type: serviceType,
-        name_of_service: nameOfService.trim(),
-        price,
-        pet_preferences: petPreferences,
-        pet_type: petType,
-        housing_type: housingType,
-        service_details: serviceDetails,
-        no_other_dogs_present: noOtherDogsPresent,
-        no_other_cats_present: noOtherCatsPresent,
-        no_children_present: noChildren,
-        no_adults_present: noAdults,
-        sitter_present_throughout_service: sitterPresentThroughout,
-        accepts_unsterilised_pets: acceptsUnsterilisedPets,
-        accepts_pets_with_transmissible_health_issues: acceptsTransmissiblePets,
-      };
-  
-      // Navigate back with the updated service data
-      navigation.navigate({
-        name: 'ProfileScreen',
-        params: { 
-          updatedService: updatedService,
-          timestamp: Date.now() // Force refresh
-        },
-        merge: true
-      });
-      
-      Alert.alert('Success', 'Service details saved successfully!');
+      Alert.alert('Success', 'Service details saved successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Navigate back to ProfileScreen - it will refresh via real-time subscription
+            navigation.goBack();
+          }
+        }
+      ]);
     } catch (error) {
       console.error('Error saving service:', error);
       Alert.alert('Error', 'Failed to save service details');

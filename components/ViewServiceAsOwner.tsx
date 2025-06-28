@@ -1,4 +1,3 @@
-//viewserviceasowner.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -16,7 +15,7 @@ import { supabase } from '../lib/supabase';
 
 type Props = NativeStackScreenProps<SearchStackParamList, 'ViewServiceAsOwner'>;
 
-// Profile type to match your profiles table
+//Profile attributes 
 type Profile = {
   id: string;
   username: string;
@@ -30,7 +29,7 @@ type Profile = {
   avatar_url?: string;
 };
 
-// PetSitter type to match your pet_sitter table
+//Pet sitter attributes 
 type PetSitter = {
   id: string;
   about_me: string;
@@ -84,7 +83,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
     try {
       setLoading(true);
       
-      // Fetch profile data
+      // Get profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -97,7 +96,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         return;
       }
 
-      // Fetch pet sitter data
+      // Get pet sitter data
       const { data: petSitterData, error: petSitterError } = await supabase
         .from('pet_sitter')
         .select('*')
@@ -154,7 +153,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
       return;
     }
 
-    // Navigate to Reviews screen with required parameters
+    // Navigate to Reviews screen
     navigation.navigate('Reviews', {
       sitterId: sitterInfo.profile.id,
       sitterUsername: sitterInfo.profile.username,
@@ -167,11 +166,11 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
     const fromDateStr = fromDate ? new Date(fromDate).toLocaleDateString() : 'TBD';
     const toDateStr = toDate ? new Date(toDate).toLocaleDateString() : 'TBD';
     
-    // Create detailed pet information
+  
     const petDetails = selectedPets?.map((pet: Pet) => {
       let petInfo = `• ${pet.name}`;
       
-      // Add pet type and breed
+    
       if (pet.pet_type) {
         petInfo += ` (${pet.pet_type}`;
         if (pet.breed) {
@@ -180,12 +179,12 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         petInfo += ')';
       }
       
-      // Add size on new line
+
       if (pet.size) {
         petInfo += `\n  size: ${pet.size}`;
       }
       
-      // Add health and behavior information on new lines
+      
       petInfo += `\n  sterilised: ${pet.sterilised ?? 'null'}`;
       petInfo += `\n  transmissible health issues: ${pet.transmissible_health_issues ?? 'null'}`;
       petInfo += `\n  friendly with dogs: ${pet.friendly_with_dogs ?? 'null'}`;
@@ -221,7 +220,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         return;
       }
   
-      // Check if user is trying to message themselves
+    //Check if user is messaging himself 
       if (currentUser.id === sitterInfo.profile.id) {
         Alert.alert('Error', 'You cannot send a message to yourself');
         return;
@@ -229,7 +228,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   
       const defaultMessage = createDefaultMessage();
   
-      // Insert the message into the messages table
+      // Insert message into the messages table
       const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .insert({
@@ -255,7 +254,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
           {
             text: 'OK',
             onPress: () => {
-              // Just close the alert, no navigation
+              //No navigation here, users to navigate themselves 
               console.log('Message sent successfully');
             }
           }
@@ -286,7 +285,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
       <View style={styles.bigCard}>
         <Text style={styles.serviceName}>{service.name_of_service || 'Untitled Service'}</Text>
 
-        {/* Sitter Information Section */}
         <View style={styles.sitterSection}>
           <Image source={getSitterImageUri()} style={styles.sitterImage} />
           <View style={styles.sitterDetails}>
@@ -346,7 +344,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
           </>
         )}
 
-        {/* Service Environment */}
         <Text style={styles.label}>Service Environment</Text>
         <View style={styles.subCard}>
           {renderToggle('No other dogs present', service.no_other_dogs_present)}
@@ -377,7 +374,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
           </>
         )}
 
-        {/* Sitter's Other Skills */}
+
         {sitterInfo?.petSitter?.other_pet_related_skills && (
           <>
             <Text style={styles.label}>Other Pet-Related Skills</Text>
@@ -387,7 +384,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
           </>
         )}
 
-        {/* Sitter's Experience Section */}
         <Text style={styles.label}>Sitter's Background</Text>
         <View style={styles.subCard}>
           {renderToggle('Owns pets', sitterInfo?.petSitter?.owns_pets)}
@@ -395,7 +391,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
           {renderToggle('Works with animals professionally', sitterInfo?.petSitter?.works_with_animals)}
         </View>
 
-        {/* Selected Pets for this booking */}
         {selectedPets && selectedPets.length > 0 && (
           <>
             <Text style={styles.label}>Selected Pets for This Service</Text>
@@ -410,7 +405,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
           </>
         )}
 
-        {/* Service Duration */}
+
         {fromDate && toDate && (
           <>
             <Text style={styles.label}>Service Duration</Text>
@@ -421,7 +416,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
           </>
         )}
 
-        {/* Send Message Button */}
         <TouchableOpacity style={styles.bookButton} onPress={handleSendMessage}>
           <Text style={styles.bookButtonText}>Send Message to Sitter</Text>
         </TouchableOpacity>

@@ -1,4 +1,3 @@
-//mypetsitterprofile.tsx
 import React, { useLayoutEffect, useEffect, useState } from 'react';
 import {
   View,
@@ -8,7 +7,6 @@ import {
   StyleSheet,
   Switch,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -32,12 +30,11 @@ type Sitter = {
   username?: string;
 };
 
-// Define allowed pet types to match home.tsx
+//Allowed pet types 
 type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
 
-// Updated Service type to match the new table structure
 type Service = {
-  service_id: string; // New primary key (UUID)
+  service_id: string; 
   id: string; // Foreign key referencing user
   name_of_service: string;
   service_type: string;
@@ -45,7 +42,7 @@ type Service = {
   created_at?: string;
   price?: string;
   pet_preferences?: string;
-  pet_type?: PetType | null; // Updated to use the specific pet types
+  pet_type?: PetType | null;
   housing_type?: string;
   service_details?: string;
   accepts_pets_with_transmissible_health_issues?: boolean;
@@ -57,7 +54,7 @@ type Service = {
   no_other_dogs_present?: boolean;
 };
 
-// Updated to match Home.tsx HomeStackParamList
+
 type HomeStackParamList = {
   PetSitterProfileView: undefined;
   EditPetSitterProfile: { sitter: Sitter };
@@ -67,7 +64,7 @@ type HomeStackParamList = {
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'PetSitterProfileView'>;
 
-export default function MyPetSitterProfile({ route, navigation }: Props) {
+export default function MyPetSitterProfile({ navigation }: Props) {
   const [sitter, setSitter] = useState<Sitter | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +124,7 @@ export default function MyPetSitterProfile({ route, navigation }: Props) {
         });
       }
 
-      // Fetch review count
+      // Count number of reveiws 
       const { count: reviewCountData, error: reviewCountError } = await supabase
         .from('reviews')
         .select('*', { count: 'exact', head: true })
