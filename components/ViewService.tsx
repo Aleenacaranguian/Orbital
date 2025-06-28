@@ -14,14 +14,11 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 
 // Import the HomeStackParamList from Home.tsx
-import { HomeStackParamList } from './Home'; // Adjust the import path as needed
+import { HomeStackParamList } from './Home';
 
-// Use the imported type instead of redefining it
+
 type Props = NativeStackScreenProps<HomeStackParamList, 'ViewService'>;
 
-// Remove the local Service type definition since it's already defined in Home.tsx
-// Import Service type from Home.tsx instead
-import { Service } from './Home'; // Adjust the import path as needed
 
 type PetSitter = {
   id: string;
@@ -56,7 +53,7 @@ export default function ViewServiceScreen({ route }: Props) {
   const [serviceImageUrl, setServiceImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Rest of your component remains the same...
+
   useEffect(() => {
     fetchServiceDetails();
   }, []);

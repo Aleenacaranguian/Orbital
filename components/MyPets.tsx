@@ -1,4 +1,3 @@
-// mypets.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, Image, TouchableOpacity,
@@ -25,7 +24,7 @@ export default function MyPets() {
   const [newPetImage, setNewPetImage] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  // get public URL of the image stored in Supabase
+  // get URL of the image stored in Supabase
   const getPetImageUrl = (petUrl: string | null) => {
     if (!petUrl) return null;
     const { data } = supabase.storage.from('my-pets').getPublicUrl(petUrl);
@@ -58,7 +57,7 @@ export default function MyPets() {
     }
   };
 
-  // fetch pets from Supabase
+  // fetch  existing pets from Supabase
   const fetchPets = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -311,7 +310,7 @@ export default function MyPets() {
         <Text style={styles.addText}>＋ Add Pet Profile</Text>
       </TouchableOpacity>
 
-      <Modal visible={modalVisible} animationType="slide" transparent>
+      <Modal visible={modalVisible} transparent>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add a New Pet</Text>
@@ -501,4 +500,3 @@ const styles = StyleSheet.create({
     color: 'red',
   },
 });
-

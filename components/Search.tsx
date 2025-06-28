@@ -1,4 +1,3 @@
-//search.tsx
 import React, { useState, useCallback } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -14,16 +13,17 @@ import {
   Alert,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { supabase } from '../lib/supabase'; // Adjust path to your supabase config
+import { supabase } from '../lib/supabase'; 
 import SearchResults from './SearchResults';
 import ViewServiceAsOwner from './ViewServiceAsOwner';
-import ReviewsScreen from './Reviews'; // Import the Reviews component
+import ReviewsScreen from './Reviews'; 
 
-// Define types based on your Supabase schema
+
+
 export type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
 
 export type Pet = {
-  id: string; // This is actually user_id, not pet_id
+  id: string; 
   name: string;
   birthday?: string | null;
   pet_type?: PetType | null;
@@ -40,7 +40,7 @@ export type Pet = {
 
 export type Service = {
   service_id: string;
-  id: string; // user_id of the sitter
+  id: string; 
   service_type: string;
   service_url?: string | null;
   created_at?: string;
@@ -57,7 +57,6 @@ export type Service = {
   sitter_present_throughout_service?: boolean;
   accepts_unsterilised_pets?: boolean;
   accepts_pets_with_transmissible_health_issues?: boolean;
-  // Additional fields for display
   sitter_name?: string;
   sitter_rating?: number;
   sitter_image?: string;
@@ -82,7 +81,7 @@ export type SearchStackParamList = {
     sitterId: string; 
     sitterUsername: string; 
     sitterAvatar: string | null 
-  }; // Added Reviews screen to the navigation stack
+  }; 
   MessageSitter: {
     sitterUsername: string;
     sitterAvatar: any;
@@ -119,7 +118,7 @@ function SearchScreen() {
   const [showToPicker, setShowToPicker] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user's pets on component mount and when screen comes into focus
+  // Fetch user's pets when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchUserPets();
@@ -139,8 +138,7 @@ function SearchScreen() {
       const { data: pets, error } = await supabase
         .from('my_pets')
         .select('*')
-        .eq('id', user.id); // 'id' is the user_id in my_pets table
-
+        .eq('id', user.id); 
       if (error) {
         console.error('Error fetching pets:', error);
         Alert.alert('Error', 'Failed to load your pets');
@@ -149,7 +147,6 @@ function SearchScreen() {
 
       setUserPets(pets || []);
       
-      // Clear selected pet if it no longer exists
       if (pets && pets.length > 0) {
         const currentPetIds = pets.map(pet => getPetUniqueId(pet));
         if (selectedPetId && !currentPetIds.includes(selectedPetId)) {
@@ -166,7 +163,7 @@ function SearchScreen() {
     }
   };
 
-  // Create unique pet identifier since pets don't have individual IDs
+  // Create unique pet identifier since pets don't have individual IDs on supabase
   const getPetUniqueId = (pet: Pet) => {
     return `${pet.id}-${pet.name}-${pet.created_at || ''}`;
   };
@@ -208,7 +205,7 @@ function SearchScreen() {
     }
 
     navigation.navigate('SearchResults', {
-      selectedPets: [selectedPet], // Still pass as array for compatibility
+      selectedPets: [selectedPet],
       selectedService,
       fromDate: fromDate.toISOString(),
       toDate: toDate.toISOString(),
@@ -217,10 +214,7 @@ function SearchScreen() {
 
   const getPetImageUri = (pet: Pet) => {
     if (pet.pet_url) {
-      // If you're storing full URLs, use directly
-      if (pet.pet_url.startsWith('http')) {
-        return { uri: pet.pet_url };
-      }
+ 
       // If storing storage paths, construct the full URL using correct bucket name
       const { data } = supabase.storage
         .from('my-pets') // Fixed bucket name to match your schema
@@ -363,8 +357,7 @@ function SearchScreen() {
     </View>
   );
 }
-
-// Main Search component with Stack Navigator
+//Search Navigation
 export default function Search() {
   return (
     <Stack.Navigator>

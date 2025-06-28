@@ -1,4 +1,3 @@
-//auth.tsx
 import React, { useState } from 'react'
 import {
   Alert,
@@ -63,7 +62,6 @@ export default function Auth() {
           ANYTIME, ANYWHERE.
         </Text>
 
-        {/* Email Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Email</Text>
           <Input
@@ -76,7 +74,6 @@ export default function Auth() {
           />
         </View>
 
-        {/* Password Input */}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Password</Text>
           <Input
@@ -89,7 +86,6 @@ export default function Auth() {
           />
         </View>
 
-        {/* Sign In Button */}
         <TouchableOpacity
           style={[styles.button, styles.signInButton]}
           onPress={signInWithEmail}
@@ -98,7 +94,6 @@ export default function Auth() {
           <Text style={styles.buttonText}>Sign In</Text>
         </TouchableOpacity>
 
-        {/* Sign Up Button */}
         <TouchableOpacity
           style={[styles.button, styles.signUpButton]}
           onPress={signUpWithEmail}
@@ -107,7 +102,6 @@ export default function Auth() {
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
 
-        {/* Pet Image */}
         <View style={styles.petImagesContainer}>
           <Image
             source={require('../assets/petstogether.png')}

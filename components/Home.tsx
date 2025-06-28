@@ -1,4 +1,3 @@
-//home.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -12,7 +11,6 @@ import {
   RefreshControl
 } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation, useFocusEffect, CommonActions } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import EditProfile from '../components/EditProfile';
 import MyPets from '../components/MyPets';
@@ -23,9 +21,9 @@ import ViewPetProfile from '../components/ViewPetProfile';
 import EditPetProfile from '../components/EditPetProfile';
 import ViewServiceScreen from '../components/ViewService';
 import EditServiceScreen from '../components/EditService';
-import ReviewsScreen from '../components/Reviews'; // Add this import
+import ReviewsScreen from '../components/Reviews'; 
 
-// Define the Pet type to match your Supabase table
+//Pet attributes
 export type Pet = {
   id: string; // user_id
   name: string; // pet_name
@@ -38,10 +36,10 @@ export type Pet = {
   friendly_with_dogs?: boolean;
   friendly_with_cats?: boolean;
   friendly_with_children?: boolean;
-  pet_url?: string | null; // Store the storage path, not full URL
+  pet_url?: string | null; 
 };
 
-// Define Sitter type to match your pet sitter components
+// Pet sitter attributes
 export type Sitter = {
   id?: string;
   imageUri?: string | null;
@@ -55,20 +53,20 @@ export type Sitter = {
   username?: string;
 };
 
-// Define allowed pet types
+// Allowed pet_types
 export type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
 
-// Define Service type - Updated to match the new table structure
+// Service attributes
 export type Service = {
-  service_id: string; // New primary key (UUID)
-  id: string; // Foreign key referencing user
+  service_id: string; 
+  id: string; 
   service_type: string;
   service_url?: string | null;
   created_at?: string;
   name_of_service?: string;
   price?: string;
   pet_preferences?: string;
-  pet_type?: PetType | null; // Updated to use the specific pet types
+  pet_type?: PetType | null;
   housing_type?: string;
   service_details?: string;
   no_other_dogs_present?: boolean;
@@ -83,9 +81,9 @@ export type Service = {
 // Export the pet type options for use in other components
 export const PET_TYPE_OPTIONS: PetType[] = ['Dog', 'Cat', 'Rabbit', 'Bird', 'Reptile', 'Fish'];
 
-// Navigation types - Updated to include Reviews
+
 export type HomeStackParamList = {
-  ProfileScreen: { updatedService?: Service; timestamp?: number } | undefined;
+  ProfileScreen: undefined;
   EditProfile: undefined;
   MyPets: undefined;
   ViewPetProfile: { pet: Pet };
@@ -95,12 +93,12 @@ export type HomeStackParamList = {
   ViewService: { service: Service };
   EditService: { service: Service };
   MyPosts: undefined;
-  Reviews: { sitterId: string; sitterUsername: string; sitterAvatar: string | null }; // Add this line
+  Reviews: { sitterId: string; sitterUsername: string; sitterAvatar: string | null };
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
-function ProfileScreen({ route, navigation }: { route: any; navigation: any }) {
+function ProfileScreen({ navigation }: { navigation: any }) {
   const [profile, setProfile] = useState<{
     username: string;
     avatar_url: string | null;
@@ -135,22 +133,6 @@ function ProfileScreen({ route, navigation }: { route: any; navigation: any }) {
     setRefreshing(true);
     fetchProfile();
   };
-
-  // Handle service updates from EditService screen
-  useFocusEffect(
-    React.useCallback(() => {
-      if (route.params?.updatedService) {
-        // Handle the updated service here
-        console.log('Service updated:', route.params.updatedService);
-        
-        // If you need to refresh any service-related data on this screen, do it here
-        // For example, if you're showing services in the profile, you might want to refetch them
-        
-        // Clear the params to prevent re-processing
-        navigation.setParams({ updatedService: undefined, timestamp: undefined });
-      }
-    }, [route.params?.updatedService, route.params?.timestamp, navigation])
-  );
 
   useEffect(() => {
     fetchProfile();
@@ -333,7 +315,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   header: {
-    fontSize: 28,
+    fontSize: 40,
     fontWeight: 'bold',
     marginBottom: 12,
     color: '#8B0000',
