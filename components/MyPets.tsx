@@ -347,8 +347,9 @@ export default function MyPets() {
                   setNewPetImage(null);
                 }}
                 disabled={adding}
+                style={styles.cancelButtonContainer}
               >
-                <Text style={[styles.modalButton, { color: 'gray' }]}>Cancel</Text>
+                <Text style={styles.cancelButton}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -434,13 +435,22 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   addButton: {
+    backgroundColor: '#C21807',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    alignItems: 'center',
     marginTop: 20,
-    alignItems: 'flex-start',
-    paddingBottom: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   addText: {
     fontSize: 16,
-    color: 'red',
+    color: '#ffffff',
     fontWeight: '600',
   },
   modalContainer: {
@@ -497,6 +507,21 @@ const styles = StyleSheet.create({
   modalButton: {
     fontSize: 16,
     fontWeight: '600',
-    color: 'red',
+    color: '#ffffff',
+  },
+  cancelButtonContainer: {
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: 60,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  cancelButton: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
   },
 });

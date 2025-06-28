@@ -321,8 +321,8 @@ const styles = StyleSheet.create({
     color: '#8B0000',
   },
   avatar: {
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
     borderRadius: 85,
     marginVertical: 8,
   },

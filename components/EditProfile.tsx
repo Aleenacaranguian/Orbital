@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { supabase } from '../lib/supabase';
 import Avatar from './Avatar';
 
@@ -30,6 +31,13 @@ const EditProfile = () => {
     avatar_url: null as string | null,
     email: '',
   });
+
+  // Hide the navigation header when component mounts
+  useEffect(() => {
+    navigation.setOptions({
+      headerShown: false
+    });
+  }, [navigation]);
 
   useEffect(() => {
     fetchProfile();
@@ -81,8 +89,18 @@ const EditProfile = () => {
       const fileName = `${userId}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      // Read file as base64 string
+      const fileBase64 = await FileSystem.readAsStringAsync(uri, { 
+        encoding: FileSystem.EncodingType.Base64 
+      });
+      
+      // Convert base64 to Uint8Array for Supabase storage
+      const byteCharacters = atob(fileBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
 
       if (profile.avatar_url) {
         try {
@@ -97,7 +115,7 @@ const EditProfile = () => {
 
       const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
-        .upload(filePath, blob, { cacheControl: '3600', upsert: true });
+        .upload(filePath, byteArray, { cacheControl: '3600', upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -177,14 +195,12 @@ const EditProfile = () => {
           return;
         }
 
-        Alert.alert('Success', 'Profile updated successfully', [
-          {
-            text: 'OK',
-            onPress: () => {
-              navigation.goBack();
-            }
-          }
-        ]);
+        Alert.alert('Success', 'Profile updated successfully');
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('HomeMain' as never);
+        }
       } else {
         Alert.alert('Error', 'User not authenticated.');
       }
@@ -200,33 +216,6 @@ const EditProfile = () => {
     setProfile(prev => ({ ...prev, [field]: value }));
   };
 
-  // Set up the navigation header with <Back and Done buttons
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ marginLeft: 15 }}
-        >
-          <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>＜Back</Text>
-        </TouchableOpacity>
-      ),
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={saving}
-          style={{ marginRight: 15, opacity: saving ? 0.5 : 1 }}
-        >
-          {saving ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>Done</Text>
-          )}
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, saving, profile]);
-
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -237,6 +226,31 @@ const EditProfile = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('HomeMain' as never);
+            }
+          }}
+          style={styles.headerButton}
+        >
+          <Text style={styles.backButton}>‹ Back</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleSave}
+          disabled={saving}
+          style={styles.headerButton}
+        >
+          <Text style={[styles.doneButton, saving && styles.disabledButton]}>
+            {saving ? 'Saving...' : 'Done'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.photoSection}>
           <Avatar url={profile.avatar_url} size={120} key={profile.avatar_url} />
@@ -323,6 +337,32 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  header: {
+    height: 100,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 50, // Add padding to avoid status bar overlap
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerButton: {
+    padding: 10,
+  },
+  backButton: {
+    fontSize: 18,
+    color: '#007AFF',
+    fontWeight: '400',
+  },
+  doneButton: {
+    fontSize: 18,
+    color: '#007AFF',
+  },
+  disabledButton: {
+    color: '#aaa',
   },
   scrollContainer: {
     flex: 1,

@@ -1,223 +1,349 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
+  Image,
+  StyleSheet,
+  Switch,
   TouchableOpacity,
-  ScrollView,
+  Alert,
   ActivityIndicator,
-  Alert
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { supabase } from '../lib/supabase';
-import Avatar from './Avatar';
 
-const AVATAR_BUCKET = 'avatars';
+const defaultAvatar = require('../assets/default-profile.png');
+const defaultServiceImage = require('../assets/petsitter.png');
 
-const EditProfile = () => {
-  const navigation = useNavigation();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [profile, setProfile] = useState({
-    username: '',
-    first_name: '',
-    last_name: '',
-    phone_number: '',
-    postal_code: '',
-    avatar_url: null as string | null,
-    email: '',
-  });
+type Sitter = {
+  id?: string;
+  imageUri?: string | null;
+  about_me: string;
+  years_of_experience: string;
+  other_pet_related_skills: string;
+  owns_pets: boolean;
+  volunteers_with_animals: boolean;
+  works_with_animals: boolean;
+  average_stars?: number;
+  username?: string;
+};
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+export type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
+
+type Service = {
+  service_id: string;
+  id: string;
+  name_of_service: string;
+  service_type: string;
+  service_url?: string | null;
+  created_at?: string;
+  price?: string;
+  pet_preferences?: string;
+  pet_type?: PetType | null;
+  housing_type?: string;
+  accepts_pets_with_transmissible_health_issues?: boolean;
+  accepts_unsterilised_pets?: boolean;
+  sitter_present_throughout_service?: boolean;
+  no_adults_present?: boolean;
+  no_children_present?: boolean;
+  no_other_cats_present?: boolean;
+  no_other_dogs_present?: boolean;
+};
+
+type HomeStackParamList = {
+  Home: undefined;
+  PetSitterProfile: { sitter: Sitter };
+  EditPetSitterProfile: { sitter: Sitter };
+  EditService: { service: Service };
+};
+
+type Props = NativeStackScreenProps<HomeStackParamList, 'EditPetSitterProfile'>;
+
+export default function EditPetSitterProfile({ route, navigation }: Props) {
+  const { sitter } = route.params;
+
+  const [about_me, set_about_me] = useState(sitter.about_me || '');
+  const [years_of_experience, set_years_of_experience] = useState(sitter.years_of_experience || '');
+  const [other_pet_related_skills, set_other_pet_related_skills] = useState(sitter.other_pet_related_skills || '');
+  const [owns_pets, set_owns_pets] = useState(sitter.owns_pets);
+  const [volunteers_with_animals, set_volunteers_with_animals] = useState(sitter.volunteers_with_animals);
+  const [works_with_animals, set_works_with_animals] = useState(sitter.works_with_animals);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
 
   const fetchProfile = async () => {
     try {
-      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-
+      
       if (user) {
-        const { data, error } = await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('username, first_name, last_name, phone_number, postal_code, avatar_url, email')
+          .select('username, avatar_url')
           .eq('id', user.id)
           .single();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
-          Alert.alert('Error', 'Failed to load profile data');
-          return;
-        }
-
-        if (data) {
-          setProfile({
-            username: data.username ?? '',
-            first_name: data.first_name ?? '',
-            last_name: data.last_name ?? '',
-            phone_number: data.phone_number ?? '',
-            postal_code: data.postal_code ?? '',
-            avatar_url: data.avatar_url,
-            email: data.email ?? '',
-          });
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+        } else {
+          setProfile(profileData);
         }
       }
     } catch (error) {
-      console.error('Error:', error);
-      Alert.alert('Error', 'Failed to load profile data');
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('services')
+          .select(`
+            service_id,
+            id,
+            name_of_service,
+            service_type,
+            service_url,
+            created_at,
+            price,
+            pet_preferences,
+            pet_type,
+            housing_type,
+            accepts_pets_with_transmissible_health_issues,
+            accepts_unsterilised_pets,
+            sitter_present_throughout_service,
+            no_adults_present,
+            no_children_present,
+            no_other_cats_present,
+            no_other_dogs_present
+          `)
+          .eq('id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (servicesError) {
+          console.error('Error fetching services:', servicesError);
+        } else {
+          setServices(servicesData || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+    fetchServices();
+  }, []);
+
+  const onSave = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        Alert.alert('Error', 'Please log in to save changes');
+        return;
+      }
+
+      const { data: existingData, error: checkError } = await supabase
+        .from('pet_sitter')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      const petSitterData = {
+        about_me,
+        years_of_experience,
+        other_pet_related_skills,
+        owns_pets,
+        volunteers_with_animals,
+        works_with_animals,
+      };
+
+      if (checkError && checkError.code === 'PGRST116') {
+        const { error: insertError } = await supabase
+          .from('pet_sitter')
+          .insert([{
+            id: user.id,
+            ...petSitterData,
+            average_stars: 0,
+          }]);
+
+        if (insertError) {
+          throw insertError;
+        }
+      } else if (!checkError) {
+        const { error: updateError } = await supabase
+          .from('pet_sitter')
+          .update(petSitterData)
+          .eq('id', user.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        throw checkError;
+      }
+
+      Alert.alert('Success', 'Pet sitter profile saved successfully!');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+    } catch (error) {
+      console.error('Error saving pet sitter profile:', error);
+      Alert.alert('Error', 'Failed to save pet sitter profile. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const uploadAvatar = async (uri: string, userId: string) => {
+  const handleAddService = async () => {
     try {
-      setUploading(true);
-
-      const fileExt = uri.split('.').pop();
-      const fileName = `${userId}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const response = await fetch(uri);
-      const blob = await response.blob();
-
-      if (profile.avatar_url) {
-        try {
-          const existingFileName = profile.avatar_url.split('/').pop()?.split('?')[0];
-          if (existingFileName) {
-            await supabase.storage.from(AVATAR_BUCKET).remove([existingFileName]);
-          }
-        } catch (deleteError) {
-          console.log('Could not delete old avatar:', deleteError);
-        }
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from(AVATAR_BUCKET)
-        .upload(filePath, blob, { cacheControl: '3600', upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(AVATAR_BUCKET)
-        .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('Avatar upload error:', error);
-      Alert.alert('Upload Error', 'Failed to upload profile picture');
-      return null;
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const pickImage = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.status !== 'granted') {
-        Alert.alert('Permission required', 'Permission to access media library is required!');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        Alert.alert('Error', 'Please log in to add services');
         return;
       }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], 
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        const pickedUri = result.assets[0].uri;
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (user) {
-          const publicUrl = await uploadAvatar(pickedUri, user.id);
-          if (publicUrl) {
-            setProfile(prev => ({ ...prev, avatar_url: publicUrl }));
-          }
-        }
+  
+      const { data: sitterExists } = await supabase
+        .from('pet_sitter')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+  
+      if (!sitterExists) {
+        Alert.alert('Error', 'Please save your pet sitter profile first');
+        return;
       }
+  
+      const timestamp = Date.now();
+      const serviceName = `Service_${timestamp}`;
+  
+      const { data: newService, error } = await supabase
+        .from('services')
+        .insert([{
+          id: user.id,
+          name_of_service: serviceName,
+          service_type: 'House visit',
+          service_url: null,
+          price: '',
+          pet_preferences: '',
+          pet_type: null,
+          housing_type: 'NA',
+          accepts_pets_with_transmissible_health_issues: false,
+          accepts_unsterilised_pets: false,
+          sitter_present_throughout_service: false,
+          no_adults_present: false,
+          no_children_present: false,
+          no_other_cats_present: false,
+          no_other_dogs_present: false,
+        }])
+        .select(`
+          service_id,
+          id,
+          name_of_service,
+          service_type,
+          service_url,
+          created_at,
+          price,
+          pet_preferences,
+          pet_type,
+          housing_type,
+          accepts_pets_with_transmissible_health_issues,
+          accepts_unsterilised_pets,
+          sitter_present_throughout_service,
+          no_adults_present,
+          no_children_present,
+          no_other_cats_present,
+          no_other_dogs_present
+        `)
+        .single();
+  
+      if (error) {
+        throw error;
+      }
+  
+      setServices(prev => [newService, ...prev]);
+      Alert.alert('Success', 'Service added! You can edit it now.');
     } catch (error) {
-      console.error('Image pick error:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      console.error('Error adding service:', error);
+      Alert.alert('Error', 'Failed to add service. Please try again.');
     }
   };
 
-  const handleAvatarUpload = async () => {
-    await pickImage();
+  const handleEditService = (service: Service) => {
+    navigation.navigate('EditService', {
+      service
+    });
   };
 
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      const { data: { user } = {} } = await supabase.auth.getUser();
+  const handleDeleteService = (service: Service) => {
+    Alert.alert(
+      `Delete ${service.name_of_service}`,
+      'Are you sure you want to delete this service? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const { error } = await supabase
+                .from('services')
+                .delete()
+                .eq('service_id', service.service_id);
 
-      if (user) {
-        const updateData = {
-          username: profile.username || null,
-          first_name: profile.first_name || null,
-          last_name: profile.last_name || null,
-          phone_number: profile.phone_number || null,
-          postal_code: profile.postal_code || null,
-          avatar_url: profile.avatar_url || null,
-        };
+              if (error) throw error;
 
-        const { error } = await supabase
-          .from('profiles')
-          .update(updateData)
-          .eq('id', user.id);
-
-        if (error) {
-          console.error('Error updating profile:', error);
-          Alert.alert('Error', 'Failed to save profile');
-          return;
-        }
-
-        Alert.alert('Success', 'Profile updated successfully', [
-          {
-            text: 'OK',
-            onPress: () => {
-              navigation.goBack();
+              setServices(prev => prev.filter(s => s.service_id !== service.service_id));
+              Alert.alert('Success', 'Service deleted successfully!');
+            } catch (error) {
+              console.error('Error deleting service:', error);
+              Alert.alert('Error', 'Failed to delete service. Please try again.');
+            } finally {
+              setLoading(false);
             }
-          }
-        ]);
-      } else {
-        Alert.alert('Error', 'User not authenticated.');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      Alert.alert('Error', 'Failed to save profile');
-    } finally {
-      setSaving(false);
+          },
+        },
+      ]
+    );
+  };
+
+  const getServiceImageUri = (service: Service) => {
+    if (service.service_url) {
+      return { uri: service.service_url };
     }
+    return defaultServiceImage;
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
+  const getAvatarUri = () => {
+    if (profile?.avatar_url) {
+      return { uri: profile.avatar_url };
+    }
+    return defaultAvatar;
   };
 
-  // Set up the navigation header with Back and Done buttons - matching pet sitter style
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ marginLeft: 15 }}
-        >
-          <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>Back</Text>
-        </TouchableOpacity>
-      ),
       headerRight: () => (
         <TouchableOpacity
-          onPress={handleSave}
-          disabled={saving}
-          style={{ marginRight: 15, opacity: saving ? 0.5 : 1 }}
+          onPress={onSave}
+          style={{ marginRight: 15 }}
+          disabled={loading}
         >
-          {saving ? (
+          {loading ? (
             <ActivityIndicator size="small" color="#007AFF" />
           ) : (
             <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>Done</Text>
@@ -225,142 +351,248 @@ const EditProfile = () => {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, saving, profile]);
-
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#000000" />
-      </View>
-    );
-  }
+  }, [navigation, about_me, years_of_experience, other_pet_related_skills, owns_pets, volunteers_with_animals, works_with_animals, loading]);
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.photoSection}>
-          <Avatar url={profile.avatar_url} size={120} key={profile.avatar_url} />
-          <TouchableOpacity
-            style={styles.changePhotoButton}
-            onPress={handleAvatarUpload}
-            disabled={uploading}
-          >
-            <Text style={[styles.changePhotoText, uploading && { opacity: 0.5 }]}>
-              {uploading ? 'Uploading...' : 'Change Profile Photo'}
-            </Text>
-          </TouchableOpacity>
-          {__DEV__ && (
-            <Text style={{ fontSize: 10, color: '#666', marginTop: 5, textAlign: 'center' }}>
-              Avatar URL: {profile.avatar_url ? 'Available' : 'null'}
-            </Text>
-          )}
+    <KeyboardAwareScrollView
+      style={{ backgroundColor: '#fef5ec' }}
+      contentContainerStyle={styles.container}
+      extraScrollHeight={100}
+      enableOnAndroid={true}
+    >
+      <View style={styles.avatarContainer}>
+        <Image
+          source={getAvatarUri()}
+          style={styles.avatar}
+        />
+        <Text style={styles.username}>{profile?.username || 'Username'}</Text>
+        <Text style={styles.reviewText}>⭐ {sitter.average_stars?.toFixed(1) || '0.0'} | Reviews</Text>
+      </View>
+
+      <Text style={styles.label}>About Me</Text>
+      <TextInput
+        style={[styles.input, styles.aboutMeInput]}
+        multiline
+        value={about_me}
+        onChangeText={set_about_me}
+        placeholder="Tell us about yourself..."
+        placeholderTextColor="gray"
+      />
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Years of Experience</Text>
+        <TextInput
+          style={styles.input}
+          value={years_of_experience}
+          onChangeText={set_years_of_experience}
+          placeholder="e.g. 2"
+          placeholderTextColor="gray"
+        />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Any Other Pet-Related Skills</Text>
+        <TextInput
+          style={styles.input}
+          value={other_pet_related_skills}
+          onChangeText={set_other_pet_related_skills}
+          placeholder="e.g. Certified in pet first aid"
+          placeholderTextColor="gray"
+        />
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Owns pets</Text>
+          <Switch value={owns_pets} onValueChange={set_owns_pets} />
         </View>
-
-        <View style={styles.formContainer}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Username</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.username}
-              onChangeText={(value) => handleInputChange('username', value)}
-              placeholderTextColor="#999"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>First Name</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.first_name}
-              onChangeText={(value) => handleInputChange('first_name', value)}
-              placeholderTextColor="#999"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last Name</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.last_name}
-              onChangeText={(value) => handleInputChange('last_name', value)}
-              placeholderTextColor="#999"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.phone_number}
-              onChangeText={(value) => handleInputChange('phone_number', value)}
-              placeholderTextColor="#999"
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Postal Code</Text>
-            <TextInput
-              style={styles.input}
-              value={profile.postal_code}
-              onChangeText={(value) => handleInputChange('postal_code', value)}
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-            />
-          </View>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Volunteer with animals</Text>
+          <Switch value={volunteers_with_animals} onValueChange={set_volunteers_with_animals} />
         </View>
-      </ScrollView>
-    </View>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Work with animals</Text>
+          <Switch value={works_with_animals} onValueChange={set_works_with_animals} />
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>Services Provided</Text>
+        <Text style={styles.instructionText}>Tap to edit • Long press to delete</Text>
+        {services.length === 0 ? (
+          <Text style={styles.noServicesText}>No services added yet 🐶</Text>
+        ) : (
+          services.map(service => (
+            <TouchableOpacity
+              key={service.service_id}
+              style={styles.serviceCardLarge}
+              onPress={() => handleEditService(service)}
+              onLongPress={() => handleDeleteService(service)}
+              delayLongPress={500}
+            >
+              <Image
+                source={getServiceImageUri(service)}
+                style={styles.serviceImageLarge}
+              />
+              <View style={styles.serviceInfoLarge}>
+                <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
+                <Text style={styles.serviceType}>{service.service_type}</Text>
+                {service.pet_type && (
+                  <Text style={styles.petType}>Pet Type: {service.pet_type}</Text>
+                )}
+                <View style={styles.actionTextContainer}>
+                  <Text style={styles.moreDetails}>Edit Details →</Text>
+                  <Text style={styles.longPressHint}>Long press to delete</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+        <TouchableOpacity onPress={handleAddService} style={styles.addServiceButton}>
+          <Text style={styles.addServiceText}>＋ Add Service</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAwareScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#FFF3E3',
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContainer: {
-    flex: 1,
+    backgroundColor: '#fef5ec',
+    paddingBottom: 40,
+    paddingTop: 60,
     paddingHorizontal: 20,
   },
-  photoSection: {
-    marginTop: 30,
+  avatarContainer: {
     alignItems: 'center',
-  },
-  changePhotoButton: {
-    marginTop: 10,
-  },
-  changePhotoText: {
-    fontSize: 16,
-    color: '#007AFF',
-  },
-  formContainer: {
-    marginTop: 30,
-  },
-  inputGroup: {
     marginBottom: 20,
   },
-  label: {
+  avatar: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    marginBottom: 10,
+  },
+  username: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#8B0000',
+    marginBottom: 5,
+  },
+  reviewText: {
     fontSize: 14,
-    color: '#333',
-    marginBottom: 6,
+    color: 'black',
+  },
+  section: {
+    marginTop: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 5,
+    marginTop: 10,
+    color: '#844d3e',
+  },
+  instructionText: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+    marginBottom: 10,
+  },
+  noServicesText: {
+    color: 'gray',
+    marginTop: 10,
+    marginBottom: 10,
+    fontSize: 14,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
     backgroundColor: '#fff',
-    borderRadius: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    padding: 12,
+    borderRadius: 10,
     fontSize: 16,
-    color: '#000',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    color: 'black',
   },
-
+  aboutMeInput: {
+    height: 120,
+    textAlignVertical: 'top',
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  serviceCardLarge: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 16,
+    height: 170,
+  },
+  serviceImageLarge: {
+    width: 150,
+    height: 140,
+    borderRadius: 12,
+    margin: 15,
+    backgroundColor: '#eee',
+    resizeMode: 'cover',
+  },
+  serviceInfoLarge: {
+    flex: 1,
+    padding: 15,
+    justifyContent: 'space-between',
+  },
+  serviceTitle: {
+    fontSize: 25,
+    fontWeight: 'bold',
+    color: '#8B0000',
+  },
+  serviceType: {
+    fontSize: 16,
+    color: 'black',
+    marginVertical: 4,
+  },
+  petType: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  actionTextContainer: {
+    alignItems: 'flex-start',
+  },
+  moreDetails: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  longPressHint: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  addServiceButton: {
+    backgroundColor: '#C21807',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  addServiceText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
 });
-
-export default EditProfile;
