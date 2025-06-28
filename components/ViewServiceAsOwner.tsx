@@ -163,14 +163,14 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
 
   const createDefaultMessage = () => {
     const serviceName = service.name_of_service || service.service_type;
-    const fromDateStr = fromDate ? new Date(fromDate).toLocaleDateString() : 'TBD';
-    const toDateStr = toDate ? new Date(toDate).toLocaleDateString() : 'TBD';
-    
+  
+    // ✅ Use toLocaleString() to include both date and time
+    const fromDateStr = fromDate ? new Date(fromDate).toLocaleString() : 'TBD';
+    const toDateStr = toDate ? new Date(toDate).toLocaleString() : 'TBD';
   
     const petDetails = selectedPets?.map((pet: Pet) => {
       let petInfo = `• ${pet.name}`;
-      
-    
+  
       if (pet.pet_type) {
         petInfo += ` (${pet.pet_type}`;
         if (pet.breed) {
@@ -178,22 +178,20 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         }
         petInfo += ')';
       }
-      
-
+  
       if (pet.size) {
         petInfo += `\n  size: ${pet.size}`;
       }
-      
-      
+  
       petInfo += `\n  sterilised: ${pet.sterilised ?? 'null'}`;
       petInfo += `\n  transmissible health issues: ${pet.transmissible_health_issues ?? 'null'}`;
       petInfo += `\n  friendly with dogs: ${pet.friendly_with_dogs ?? 'null'}`;
       petInfo += `\n  friendly with cats: ${pet.friendly_with_cats ?? 'null'}`;
       petInfo += `\n  friendly with children: ${pet.friendly_with_children ?? 'null'}`;
-      
+  
       return petInfo;
     }).join('\n') || 'My pet(s)';
-    
+  
     return `Hello ${sitterInfo?.profile?.username || 'there'}! I would like to inquire about your ${serviceName} service.
   
   Booking Details:
@@ -207,7 +205,9 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   
   I'm interested in booking this service. Could you please let me know your availability and if you have any questions about my pet(s)?`;
   };
+  
 
+  
   const handleSendMessage = async () => {
     try {
       if (!currentUser) {

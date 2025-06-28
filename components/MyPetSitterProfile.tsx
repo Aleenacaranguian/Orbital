@@ -1,3 +1,5 @@
+// Updated MyPetSitterProfile component with proper service image handling
+
 import React, { useLayoutEffect, useEffect, useState } from 'react';
 import {
   View,
@@ -30,12 +32,11 @@ type Sitter = {
   username?: string;
 };
 
-//Allowed pet types 
 type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
 
 type Service = {
   service_id: string; 
-  id: string; // Foreign key referencing user
+  id: string;
   name_of_service: string;
   service_type: string;
   service_url?: string | null;
@@ -54,7 +55,6 @@ type Service = {
   no_other_dogs_present?: boolean;
 };
 
-
 type HomeStackParamList = {
   PetSitterProfileView: undefined;
   EditPetSitterProfile: { sitter: Sitter };
@@ -70,6 +70,8 @@ export default function MyPetSitterProfile({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
   const [reviewCount, setReviewCount] = useState(0);
+  // Add state to store service image URLs
+  const [serviceImageUrls, setServiceImageUrls] = useState<{ [key: string]: string }>({});
 
   const fetchPetSitterProfile = async () => {
     try {
@@ -102,7 +104,6 @@ export default function MyPetSitterProfile({ navigation }: Props) {
 
       if (sitterError) {
         if (sitterError.code === 'PGRST116') {
-          // No pet sitter profile exists, create default one
           setSitter({
             id: user.id,
             about_me: '',
@@ -124,7 +125,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
         });
       }
 
-      // Count number of reveiws 
+      // Count number of reviews 
       const { count: reviewCountData, error: reviewCountError } = await supabase
         .from('reviews')
         .select('*', { count: 'exact', head: true })
@@ -136,7 +137,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
         setReviewCount(reviewCountData || 0);
       }
 
-      // Fetch services with all required fields including service_id and pet_type
+      // Fetch services
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select(`
@@ -166,6 +167,23 @@ export default function MyPetSitterProfile({ navigation }: Props) {
         console.error('Error fetching services:', servicesError);
       } else {
         setServices(servicesData || []);
+        
+        // Fetch public URLs for service images
+        if (servicesData && servicesData.length > 0) {
+          const imageUrls: { [key: string]: string } = {};
+          
+          for (const service of servicesData) {
+            if (service.service_url) {
+              const { data: imageData } = supabase.storage
+                .from('services')
+                .getPublicUrl(service.service_url);
+              
+              imageUrls[service.service_id] = imageData.publicUrl;
+            }
+          }
+          
+          setServiceImageUrls(imageUrls);
+        }
       }
 
     } catch (error) {
@@ -254,9 +272,11 @@ export default function MyPetSitterProfile({ navigation }: Props) {
     }
   };
 
+  // Updated function to get service image URI using the cached public URLs
   const getServiceImageUri = (service: Service) => {
-    if (service.service_url) {
-      return { uri: service.service_url };
+    const publicUrl = serviceImageUrls[service.service_id];
+    if (publicUrl) {
+      return { uri: publicUrl };
     }
     return defaultServiceImage;
   };

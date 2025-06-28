@@ -15,6 +15,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 
 type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
 
@@ -124,6 +125,43 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     }
   }
 
+  // Upload image to Supabase storage using base64 conversion (same as EditPetProfile)
+  const uploadServiceImage = async (imageUri: string, serviceName: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      const fileExt = imageUri.split('.').pop();
+      const fileName = `${service.service_id}_${serviceName || 'service'}_${Date.now()}.${fileExt}`;
+
+      // Read file as base64 string (same as EditPetProfile approach)
+      const fileBase64 = await FileSystem.readAsStringAsync(imageUri, { 
+        encoding: FileSystem.EncodingType.Base64 
+      });
+      
+      // Convert base64 to Uint8Array for Supabase storage
+      const byteCharacters = atob(fileBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+
+      const { data, error } = await supabase.storage
+        .from('services')
+        .upload(fileName, byteArray, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) throw error;
+      return data.path;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  };
+
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -133,7 +171,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [16, 9],
         quality: 0.8,
@@ -156,27 +194,23 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
   
-      const fileExt = imageUri.split('.').pop();
-      const fileName = `${service.service_id}_${nameOfService || 'service'}_${Date.now()}.${fileExt}`;
-  
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-  
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('services')
-        .upload(fileName, blob, {
-          cacheControl: '3600',
-          upsert: true
-        });
-  
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw uploadError;
+      // Delete old image if exists
+      if (service.service_url) {
+        try {
+          await supabase.storage
+            .from('services')
+            .remove([service.service_url]);
+        } catch (error) {
+          console.error('Error deleting old image:', error);
+        }
       }
+
+      // Upload new image using the same method as EditPetProfile
+      const newServiceUrl = await uploadServiceImage(imageUri, nameOfService);
   
       const { error: updateError } = await supabase
         .from('services')
-        .update({ service_url: fileName })
+        .update({ service_url: newServiceUrl })
         .eq('service_id', service.service_id);
   
       if (updateError) {
@@ -186,7 +220,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
   
       const { data: imageData } = supabase.storage
         .from('services')
-        .getPublicUrl(fileName);
+        .getPublicUrl(newServiceUrl);
       
       setServiceImageUrl(imageData.publicUrl);
       

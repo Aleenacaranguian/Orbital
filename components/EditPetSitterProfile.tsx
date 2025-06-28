@@ -73,10 +73,16 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
+  const [serviceImageUrls, setServiceImageUrls] = useState<{ [key: string]: string }>({});
 
   const fetchProfile = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user for profile:', userError);
+        return;
+      }
       
       if (user) {
         const { data: profileData, error: profileError } = await supabase
@@ -92,47 +98,93 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
         }
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Unexpected error fetching profile:', error);
     }
   };
 
   const fetchServices = async () => {
+    setLoading(true);
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
-      if (user) {
-        const { data: servicesData, error: servicesError } = await supabase
-          .from('services')
-          .select(`
-            service_id,
-            id,
-            name_of_service,
-            service_type,
-            service_url,
-            created_at,
-            price,
-            pet_preferences,
-            pet_type,
-            housing_type,
-            accepts_pets_with_transmissible_health_issues,
-            accepts_unsterilised_pets,
-            sitter_present_throughout_service,
-            no_adults_present,
-            no_children_present,
-            no_other_cats_present,
-            no_other_dogs_present
-          `)
-          .eq('id', user.id)
-          .order('created_at', { ascending: false });
+      if (userError) {
+        console.error('Error getting user:', userError);
+        setLoading(false);
+        return;
+      }
+      
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
+      // Test connection to services table
+      const { data: testData, error: testError } = await supabase
+        .from('services')
+        .select('*')
+        .limit(1);
+      
+      if (testError) {
+        console.error('Test query failed:', testError);
+        Alert.alert('Database Error', `Cannot access services table: ${testError.message}`);
+        setLoading(false);
+        return;
+      }
+      
+      // Fetch user's services
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select(`
+          service_id,
+          id,
+          name_of_service,
+          service_type,
+          service_url,
+          created_at,
+          price,
+          pet_preferences,
+          pet_type,
+          housing_type,
+          accepts_pets_with_transmissible_health_issues,
+          accepts_unsterilised_pets,
+          sitter_present_throughout_service,
+          no_adults_present,
+          no_children_present,
+          no_other_cats_present,
+          no_other_dogs_present
+        `)
+        .eq('id', user.id)
+        .order('created_at', { ascending: false });
 
-        if (servicesError) {
-          console.error('Error fetching services:', servicesError);
-        } else {
-          setServices(servicesData || []);
+      if (servicesError) {
+        console.error('Error fetching services:', servicesError);
+        Alert.alert('Error', `Failed to fetch services: ${servicesError.message}`);
+      } else {
+        setServices(servicesData || []);
+        
+        // Fetch public URLs for service images
+        if (servicesData && servicesData.length > 0) {
+          const imageUrls: { [key: string]: string } = {};
+          
+          for (const service of servicesData) {
+            if (service.service_url) {
+              const { data: imageData } = supabase.storage
+                .from('services')
+                .getPublicUrl(service.service_url);
+              
+              imageUrls[service.service_id] = imageData.publicUrl;
+            }
+          }
+          
+          setServiceImageUrls(imageUrls);
         }
       }
     } catch (error) {
-      console.error('Error fetching services:', error);
+      console.error('Unexpected error fetching services:', error);
+      Alert.alert('Error', `Unexpected error: ${error}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -140,6 +192,15 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
     fetchProfile();
     fetchServices();
   }, []);
+
+  // Refresh services when returning from EditService screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchServices();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   const onSave = async () => {
     setLoading(true);
@@ -268,6 +329,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
         .single();
   
       if (error) {
+        console.error('Error adding service:', error);
         throw error;
       }
   
@@ -308,6 +370,11 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
               if (error) throw error;
 
               setServices(prev => prev.filter(s => s.service_id !== service.service_id));
+              setServiceImageUrls(prev => {
+                const updated = { ...prev };
+                delete updated[service.service_id];
+                return updated;
+              });
               Alert.alert('Success', 'Service deleted successfully!');
             } catch (error) {
               console.error('Error deleting service:', error);
@@ -321,9 +388,14 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
     );
   };
 
+  const handleRefreshServices = () => {
+    fetchServices();
+  };
+
   const getServiceImageUri = (service: Service) => {
-    if (service.service_url) {
-      return { uri: service.service_url };
+    const publicUrl = serviceImageUrls[service.service_id];
+    if (publicUrl) {
+      return { uri: publicUrl };
     }
     return defaultServiceImage;
   };
@@ -338,17 +410,19 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <TouchableOpacity
-          onPress={onSave}
-          style={{ marginRight: 15 }}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 16 }}>Done</Text>
-          )}
-        </TouchableOpacity>
+        <View style={{ marginRight: 15, paddingRight: 5 }}>
+          <TouchableOpacity
+            onPress={onSave}
+            style={styles.headerButton}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#007AFF" />
+            ) : (
+              <Text style={styles.headerButtonText}>Done</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       ),
     });
   }, [navigation, about_me, years_of_experience, other_pet_related_skills, owns_pets, volunteers_with_animals, works_with_animals, loading]);
@@ -417,9 +491,20 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>Services Provided</Text>
+        <View style={styles.servicesHeader}>
+          <Text style={styles.label}>Services Provided</Text>
+          <TouchableOpacity onPress={handleRefreshServices} style={styles.refreshButton}>
+            <Text style={styles.refreshText}>🔄 Refresh</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.instructionText}>Tap to edit • Long press to delete</Text>
-        {services.length === 0 ? (
+        
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#C21807" />
+            <Text style={styles.loadingText}>Loading services...</Text>
+          </View>
+        ) : services.length === 0 ? (
           <Text style={styles.noServicesText}>No services added yet 🐶</Text>
         ) : (
           services.map(service => (
@@ -448,6 +533,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
             </TouchableOpacity>
           ))
         )}
+        
         <TouchableOpacity onPress={handleAddService} style={styles.addServiceButton}>
           <Text style={styles.addServiceText}>＋ Add Service</Text>
         </TouchableOpacity>
@@ -462,6 +548,24 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     paddingTop: 60,
     paddingHorizontal: 20,
+  },
+  // Fixed header button styles
+  headerButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    marginRight: 0,
+    marginLeft: 0,
+    minWidth: 55,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  headerButtonText: {
+    color: '#007AFF',
+    fontWeight: '600',
+    fontSize: 16,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   avatarContainer: {
     alignItems: 'center',
@@ -486,6 +590,19 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 20,
   },
+  servicesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  refreshButton: {
+    padding: 5,
+  },
+  refreshText: {
+    fontSize: 14,
+    color: '#007AFF',
+  },
   label: {
     fontSize: 16,
     fontWeight: '600',
@@ -498,6 +615,15 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
     marginBottom: 10,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 14,
   },
   noServicesText: {
     color: 'gray',
