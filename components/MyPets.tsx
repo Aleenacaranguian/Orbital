@@ -25,14 +25,14 @@ export default function MyPets() {
   const [newPetImage, setNewPetImage] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  // get URL of the image stored in Supabase
+  // Get URL of the image stored in Supabase
   const getPetImageUrl = (petUrl: string | null) => {
     if (!petUrl) return null;
     const { data } = supabase.storage.from('my-pets').getPublicUrl(petUrl);
     return data?.publicUrl || null;
   };
 
-  // upload image to Supabase storage using base64 conversion (same as EditProfile)
+
   const uploadPetImage = async (imageUri: string, petName: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -41,12 +41,12 @@ export default function MyPets() {
       const fileExt = imageUri.split('.').pop();
       const fileName = `${user.id}_${petName}_${Date.now()}.${fileExt}`;
 
-      // Read file as base64 string (same as EditProfile approach)
+    
       const fileBase64 = await FileSystem.readAsStringAsync(imageUri, { 
         encoding: FileSystem.EncodingType.Base64 
       });
       
-      // Convert base64 to Uint8Array for Supabase storage
+      
       const byteCharacters = atob(fileBase64);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -69,7 +69,7 @@ export default function MyPets() {
     }
   };
 
-  // fetch  existing pets from Supabase
+  // Fetch existing pets from Supabase
   const fetchPets = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -106,7 +106,7 @@ export default function MyPets() {
     }
   };
 
-  // add pet entry to Supabase
+  // Add pet entry to Supabase
   const handleAddPet = async () => {
     if (!newPetName.trim()) {
       Alert.alert('Error', 'Please enter a pet name.');
@@ -174,7 +174,7 @@ export default function MyPets() {
     }
   };
 
-  // delete pet and image from Supabase
+  // Delete pet and image from Supabase
   const handleDeletePet = async (petName: string) => {
     Alert.alert(
       'Delete Pet',
@@ -223,7 +223,7 @@ export default function MyPets() {
     );
   };
 
-  // pick image from gallery
+  // Pick image from gallery
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'], // Fixed: Changed from ImagePicker.MediaTypeOptions.Images to ['images']

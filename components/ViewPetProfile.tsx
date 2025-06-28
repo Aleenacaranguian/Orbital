@@ -21,7 +21,6 @@ const defaultAvatar = require('../assets/default-profile.png');
 export default function ViewPetProfile({ route, navigation }: Props) {
   const [pet, setPet] = useState<Pet>(route.params.pet);
 
-  // Get pet image URL from Supabase storage
   const getPetImageUrl = (petUrl: string | null | undefined) => {
     if (!petUrl) return null;
     
@@ -32,7 +31,7 @@ export default function ViewPetProfile({ route, navigation }: Props) {
     return data.publicUrl;
   };
 
-  // Listen for navigation params updates (when coming back from edit)
+  
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       if (route.params?.pet) {

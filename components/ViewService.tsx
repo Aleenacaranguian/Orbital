@@ -1,4 +1,3 @@
-// viewservice.tsx - Updated Props type
 import React, { useEffect, useState } from 'react';
 import {
   View,

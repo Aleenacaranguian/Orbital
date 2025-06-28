@@ -1,5 +1,3 @@
-// Updated MyPetSitterProfile component with proper service image handling
-
 import React, { useLayoutEffect, useEffect, useState } from 'react';
 import {
   View,
@@ -70,7 +68,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ username: string; avatar_url: string | null } | null>(null);
   const [reviewCount, setReviewCount] = useState(0);
-  // Add state to store service image URLs
+
   const [serviceImageUrls, setServiceImageUrls] = useState<{ [key: string]: string }>({});
 
   const fetchPetSitterProfile = async () => {
@@ -82,7 +80,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
         return;
       }
 
-      // Fetch profile data for avatar and username
+  
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('username, avatar_url')
@@ -197,7 +195,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
   useEffect(() => {
     fetchPetSitterProfile();
 
-    // Set up real-time subscription for profile changes
+    // Real-time subscription for profile changes
     const setupSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -272,7 +270,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
     }
   };
 
-  // Updated function to get service image URI using the cached public URLs
+
   const getServiceImageUri = (service: Service) => {
     const publicUrl = serviceImageUrls[service.service_id];
     if (publicUrl) {
