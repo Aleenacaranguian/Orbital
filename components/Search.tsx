@@ -17,6 +17,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../lib/supabase'; // Adjust path to your supabase config
 import SearchResults from './SearchResults';
 import ViewServiceAsOwner from './ViewServiceAsOwner';
+import ReviewsScreen from './Reviews'; // Import the Reviews component
 
 // Define types based on your Supabase schema
 export type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
@@ -77,7 +78,11 @@ export type SearchStackParamList = {
     fromDate: string;
     toDate: string;
   };
-  // Add this line:
+  Reviews: { 
+    sitterId: string; 
+    sitterUsername: string; 
+    sitterAvatar: string | null 
+  }; // Added Reviews screen to the navigation stack
   MessageSitter: {
     sitterUsername: string;
     sitterAvatar: any;
@@ -106,7 +111,7 @@ function SearchScreen() {
   const { height } = useWindowDimensions();
 
   const [userPets, setUserPets] = useState<Pet[]>([]);
-  const [selectedPetIds, setSelectedPetIds] = useState<string[]>([]); // Changed to support multiple pets by unique ID
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null); // Changed to single pet selection
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date());
@@ -144,12 +149,14 @@ function SearchScreen() {
 
       setUserPets(pets || []);
       
-      // Clear selected pets if they no longer exist
+      // Clear selected pet if it no longer exists
       if (pets && pets.length > 0) {
         const currentPetIds = pets.map(pet => getPetUniqueId(pet));
-        setSelectedPetIds(prev => prev.filter(id => currentPetIds.includes(id)));
+        if (selectedPetId && !currentPetIds.includes(selectedPetId)) {
+          setSelectedPetId(null);
+        }
       } else {
-        setSelectedPetIds([]);
+        setSelectedPetId(null);
       }
     } catch (error) {
       console.error('Error in fetchUserPets:', error);
@@ -167,25 +174,26 @@ function SearchScreen() {
   const selectPet = (pet: Pet) => {
     const petId = getPetUniqueId(pet);
     
-    if (selectedPetIds.includes(petId)) {
-      // Remove pet if already selected
-      setSelectedPetIds(selectedPetIds.filter(id => id !== petId));
+    if (selectedPetId === petId) {
+      // Deselect pet if already selected
+      setSelectedPetId(null);
     } else {
-      // Add pet to selection
-      setSelectedPetIds([...selectedPetIds, petId]);
+      // Select this pet (replacing any previously selected pet)
+      setSelectedPetId(petId);
     }
   };
 
-  // Get selected pets objects
-  const getSelectedPets = (): Pet[] => {
-    return userPets.filter(pet => selectedPetIds.includes(getPetUniqueId(pet)));
+  // Get selected pet object
+  const getSelectedPet = (): Pet | null => {
+    if (!selectedPetId) return null;
+    return userPets.find(pet => getPetUniqueId(pet) === selectedPetId) || null;
   };
 
   const handleSearch = () => {
-    const selectedPets = getSelectedPets();
+    const selectedPet = getSelectedPet();
     
-    if (selectedPets.length === 0) {
-      Alert.alert('Select Pet', 'Please select at least one pet for the service');
+    if (!selectedPet) {
+      Alert.alert('Select Pet', 'Please select a pet for the service');
       return;
     }
 
@@ -200,7 +208,7 @@ function SearchScreen() {
     }
 
     navigation.navigate('SearchResults', {
-      selectedPets,
+      selectedPets: [selectedPet], // Still pass as array for compatibility
       selectedService,
       fromDate: fromDate.toISOString(),
       toDate: toDate.toISOString(),
@@ -239,7 +247,7 @@ function SearchScreen() {
           <View style={styles.rowBetween}>
             <View>
               <Text style={styles.subLabel}>Who</Text>
-              <Text style={styles.helperText}>Select Pet(s)</Text>
+              <Text style={styles.helperText}>Select a Pet</Text>
             </View>
             <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
               <Text style={styles.searchButtonText}>Search</Text>
@@ -250,7 +258,7 @@ function SearchScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.avatarRow}>
               {userPets.map((pet, index) => {
                 const petId = getPetUniqueId(pet);
-                const isSelected = selectedPetIds.includes(petId);
+                const isSelected = selectedPetId === petId;
                 
                 return (
                   <TouchableOpacity
@@ -374,6 +382,11 @@ export default function Search() {
         name="ViewServiceAsOwner" 
         component={ViewServiceAsOwner} 
         options={{ title: 'View Service' }} 
+      />
+      <Stack.Screen 
+        name="Reviews" 
+        component={ReviewsScreen} 
+        options={{ title: 'Reviews' }} 
       />
     </Stack.Navigator>
   );
