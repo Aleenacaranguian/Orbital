@@ -4,6 +4,7 @@ import {
   FlatList, StyleSheet, Alert, TextInput, Modal, ActivityIndicator
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
@@ -31,7 +32,7 @@ export default function MyPets() {
     return data?.publicUrl || null;
   };
 
-  // upload image to Supabase storage
+  // upload image to Supabase storage using base64 conversion (same as EditProfile)
   const uploadPetImage = async (imageUri: string, petName: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -39,13 +40,24 @@ export default function MyPets() {
 
       const fileExt = imageUri.split('.').pop();
       const fileName = `${user.id}_${petName}_${Date.now()}.${fileExt}`;
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
+
+      // Read file as base64 string (same as EditProfile approach)
+      const fileBase64 = await FileSystem.readAsStringAsync(imageUri, { 
+        encoding: FileSystem.EncodingType.Base64 
+      });
+      
+      // Convert base64 to Uint8Array for Supabase storage
+      const byteCharacters = atob(fileBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
 
       const { data, error } = await supabase.storage
         .from('my-pets')
-        .upload(fileName, blob, {
-          contentType: `image/${fileExt}`,
+        .upload(fileName, byteArray, {
+          cacheControl: '3600',
           upsert: true
         });
 
@@ -214,7 +226,7 @@ export default function MyPets() {
   // pick image from gallery
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'], // Fixed: Changed from ImagePicker.MediaTypeOptions.Images to ['images']
       allowsEditing: true,
       quality: 1,
     });

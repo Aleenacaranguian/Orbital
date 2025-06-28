@@ -17,6 +17,7 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { supabase } from '../lib/supabase';
 import { HomeStackParamList, Pet } from './Home';
 
@@ -28,11 +29,11 @@ export default function EditPetProfile({ route, navigation }: Props) {
   const { pet } = route.params;
 
   const [name, setName] = useState(pet.name);
-  const [breed, setBreed] = useState(pet.breed || ''); // Add breed state
+  const [breed, setBreed] = useState(pet.breed || '');
   const [birthday, setBirthday] = useState(pet.birthday || '');
   const [petType, setPetType] = useState(pet.pet_type || '');
   const [size, setSize] = useState(pet.size || '');
-  const [petUrl, setPetUrl] = useState(pet.pet_url || ''); // Store the storage path
+  const [petUrl, setPetUrl] = useState(pet.pet_url || '');
   const [imageUploading, setImageUploading] = useState(false);
 
   const [sterilised, setSterilised] = useState(pet.sterilised || false);
@@ -73,6 +74,43 @@ export default function EditPetProfile({ route, navigation }: Props) {
     return data.publicUrl;
   };
 
+  // Upload image to Supabase storage using base64 conversion (same as MyPets)
+  const uploadPetImage = async (imageUri: string, petName: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+
+      const fileExt = imageUri.split('.').pop();
+      const fileName = `${user.id}_${petName}_${Date.now()}.${fileExt}`;
+
+      // Read file as base64 string (same as MyPets approach)
+      const fileBase64 = await FileSystem.readAsStringAsync(imageUri, { 
+        encoding: FileSystem.EncodingType.Base64 
+      });
+      
+      // Convert base64 to Uint8Array for Supabase storage
+      const byteCharacters = atob(fileBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+
+      const { data, error } = await supabase.storage
+        .from('my-pets')
+        .upload(fileName, byteArray, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (error) throw error;
+      return data.path;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  };
+
   // Function to pick image from gallery or camera
   const pickImage = async (source: 'camera' | 'gallery') => {
     try {
@@ -85,10 +123,10 @@ export default function EditPetProfile({ route, navigation }: Props) {
           return;
         }
         result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [1, 1],
-          quality: 0.8,
+          quality: 1,
         });
       } else {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -97,10 +135,10 @@ export default function EditPetProfile({ route, navigation }: Props) {
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: ['images'],
           allowsEditing: true,
           aspect: [1, 1],
-          quality: 0.8,
+          quality: 1,
         });
       }
 
@@ -113,21 +151,13 @@ export default function EditPetProfile({ route, navigation }: Props) {
     }
   };
 
-  // Function to upload image to Supabase storage
+  // Function to upload image using the same logic as MyPets
   const uploadImage = async (uri: string) => {
     try {
       setImageUploading(true);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
-
-      // Create a unique filename
-      const fileExt = uri.split('.').pop();
-      const fileName = `${user.id}_${pet.name}_${Date.now()}.${fileExt}`;
-
-      // Convert URI to blob for upload
-      const response = await fetch(uri);
-      const blob = await response.blob();
 
       // Delete old image if exists
       if (petUrl) {
@@ -140,18 +170,11 @@ export default function EditPetProfile({ route, navigation }: Props) {
         }
       }
 
-      // Upload to Supabase storage
-      const { data, error: uploadError } = await supabase.storage
-        .from('my-pets')
-        .upload(fileName, blob, {
-          contentType: `image/${fileExt}`,
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
+      // Upload new image using the same method as MyPets
+      const newPetUrl = await uploadPetImage(uri, pet.name);
+      
       // Store the storage path (not the full URL)
-      setPetUrl(data.path);
+      setPetUrl(newPetUrl);
       Alert.alert('Success', 'Image uploaded successfully!');
       
     } catch (error) {
@@ -225,7 +248,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
         const { error } = await supabase
           .from('my_pets')
           .update({
-            breed: breed || null, // Add breed to update
+            breed: breed || null,
             birthday: birthday || null,
             pet_type: petType || null,
             size: size || null,
