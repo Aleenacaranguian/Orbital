@@ -1,4 +1,3 @@
-//messagesitter.tsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
@@ -67,7 +66,6 @@ export default function MessageSitterScreen() {
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastMessageTimestampRef = useRef<string | null>(null);
 
-  // Keep sitterId as string (it's a UUID)
   const sitterIdString = sitterId;
 
   // Cleanup function
@@ -83,7 +81,7 @@ export default function MessageSitterScreen() {
     setIsRealtimeConnected(false);
   }, []);
 
-  // Focus effect to handle screen navigation
+  
   useFocusEffect(
     useCallback(() => {
       if (currentUser && sitterIdString) {
@@ -140,10 +138,10 @@ export default function MessageSitterScreen() {
     }
   };
 
-  // New function to determine conversation ownership
+  // Function to  conversation ownership
   const determineConversationOwnership = (messages: Message[]) => {
     if (messages.length === 0) {
-      // No messages yet, current user can potentially be the owner if they send first
+      //current user can potentially be the owner if they send first
       setConversationOwner(null);
       setCanReview(false);
       return;
@@ -163,9 +161,9 @@ export default function MessageSitterScreen() {
     setCanReview(currentUser?.id === firstMessageSenderId);
   };
 
-  // Polling fallback for when real-time doesn't work
+  
   const startPolling = useCallback(() => {
-    // Clear any existing polling
+   
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
@@ -200,7 +198,7 @@ export default function MessageSitterScreen() {
       } catch (error) {
         console.error('Polling error:', error);
       }
-    }, 2000); // Poll every 2 seconds
+    }, 2000); 
   }, [currentUser, sitterIdString]);
 
   // Try real-time first, fallback to polling
@@ -225,13 +223,11 @@ export default function MessageSitterScreen() {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          // Let RLS handle filtering server-side
         },
         (payload) => {
           if (payload.eventType === 'INSERT' && payload.new) {
             const newMessage = payload.new as Message;
             
-            // Client-side filter for messages in this conversation
             const isRelevantMessage = 
               (newMessage.sender_id === currentUser.id && newMessage.recipient_id === sitterIdString) ||
               (newMessage.sender_id === sitterIdString && newMessage.recipient_id === currentUser.id);
@@ -244,12 +240,12 @@ export default function MessageSitterScreen() {
                 if (exists) return prev;
                 
                 const updatedMessages = [...prev, newMessage];
-                // Update conversation ownership when new message arrives
+
                 determineConversationOwnership(updatedMessages);
                 return updatedMessages;
               });
               
-              // Auto-scroll without animation
+
               setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: false });
               }, 50);
@@ -265,7 +261,7 @@ export default function MessageSitterScreen() {
         if (status === 'SUBSCRIBED') {
           setIsRealtimeConnected(true);
           
-          // Clear any existing polling when real-time connects
+        
           if (pollingIntervalRef.current) {
             clearInterval(pollingIntervalRef.current);
             pollingIntervalRef.current = null;
@@ -315,7 +311,7 @@ export default function MessageSitterScreen() {
         lastMessageTimestampRef.current = data[data.length - 1].created_at;
       }
       
-      // Auto-scroll to bottom after loading without animation
+     
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
       }, 100);
@@ -349,16 +345,16 @@ export default function MessageSitterScreen() {
       created_at: new Date().toISOString(),
     };
 
-    // Add message immediately to UI
+
     setChatMessages(prev => {
       const updatedMessages = [...prev, optimisticMessage];
       // Update conversation ownership when sending message
       determineConversationOwnership(updatedMessages);
       return updatedMessages;
     });
-    setMessage(''); // Clear input immediately
+    setMessage(''); 
     
-    // Auto-scroll to bottom immediately without animation
+ 
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: false });
     }, 50);
@@ -378,41 +374,40 @@ export default function MessageSitterScreen() {
 
       if (error) {
         console.error('Send message error:', error);
-        // Remove the optimistic message on error
         setChatMessages(prev => {
           const filteredMessages = prev.filter(msg => msg.id !== tempId);
           determineConversationOwnership(filteredMessages);
           return filteredMessages;
         });
         Alert.alert('Error', 'Failed to send message. Please try again.');
-        setMessage(messageToSend); // Restore message on error
+        setMessage(messageToSend); 
         return;
       }
 
-      // Replace optimistic message with real message
+      
       setChatMessages(prev => {
         const updatedMessages = prev.map(msg => msg.id === tempId ? data : msg);
         determineConversationOwnership(updatedMessages);
         return updatedMessages;
       });
 
-      // Update last message timestamp
+     
       lastMessageTimestampRef.current = data.created_at;
 
     } catch (error) {
       console.error('Send error:', error);
-      // Remove the optimistic message on error
+     
       setChatMessages(prev => {
         const filteredMessages = prev.filter(msg => msg.id !== tempId);
         determineConversationOwnership(filteredMessages);
         return filteredMessages;
       });
       Alert.alert('Error', 'Failed to send message');
-      setMessage(messageToSend); // Restore message on error
+      setMessage(messageToSend); 
     }
   };
 
-  // Review functions
+  
   const openReviewModal = () => {
     if (!canReview) {
       Alert.alert('Unable to Review', 'Only the conversation starter can leave a review.');
@@ -549,7 +544,7 @@ export default function MessageSitterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {/* Header */}
+
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
@@ -571,7 +566,7 @@ export default function MessageSitterScreen() {
         </View>
       </View>
 
-      {/* Chat Messages */}
+     
       <FlatList
         ref={flatListRef}
         style={styles.chatList}
@@ -588,7 +583,7 @@ export default function MessageSitterScreen() {
         )}
       />
 
-      {/* Message Input */}
+
       <View style={styles.messageBox}>
         <TextInput
           multiline
@@ -607,7 +602,7 @@ export default function MessageSitterScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Review Modal - Only render if user can review */}
+    
       {canReview && (
         <Modal
           visible={showReviewModal}
