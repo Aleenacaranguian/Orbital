@@ -622,7 +622,7 @@ const styles = StyleSheet.create({
   ratingNumber: {
     fontSize: 12,
     color: '#666',
-    marginLeft: 4,
+    marginLeft: -1,
   },
   moreDetails: {
     backgroundColor: '#f5c28b',

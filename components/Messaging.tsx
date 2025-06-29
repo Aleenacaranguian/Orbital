@@ -17,7 +17,6 @@ import { supabase } from '../lib/supabase';
 
 const defaultAvatar = require('../assets/default-profile.png');
 
-
 export type MessagingStackParamList = {
   ChatList: undefined;
   MessageSitter: {
@@ -44,6 +43,30 @@ type ChatListScreenNavigationProp = NativeStackNavigationProp<
   'ChatList'
 >;
 
+// Avatar component with better error handling
+const AvatarImage = ({ avatarUrl, style }: { avatarUrl: string | null, style: any }) => {
+  const [imageError, setImageError] = useState(false);
+  
+  const getImageSource = () => {
+    if (!avatarUrl || imageError) {
+      return defaultAvatar;
+    }
+    return { uri: avatarUrl };
+  };
+
+  return (
+    <Image
+      source={getImageSource()}
+      style={style}
+      onError={() => {
+        console.warn('Avatar failed to load:', avatarUrl);
+        setImageError(true);
+      }}
+      defaultSource={defaultAvatar}
+    />
+  );
+};
+
 function ChatListScreen() {
   const navigation = useNavigation<ChatListScreenNavigationProp>();
   const [chats, setChats] = useState<ChatItem[]>([]);
@@ -54,7 +77,6 @@ function ChatListScreen() {
     fetchCurrentUser();
   }, []);
 
-  
   useFocusEffect(
     React.useCallback(() => {
       if (currentUser) {
@@ -73,6 +95,33 @@ function ChatListScreen() {
     }
   };
 
+  const getAvatarUrl = (avatarPath: string) => {
+    if (!avatarPath) {
+      return null;
+    }
+    
+    try {
+      // Check if the avatarPath is already a full URL
+      if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+        return avatarPath;
+      }
+      
+      // Clean the path - remove any leading slashes or 'avatars/' prefix
+      const cleanPath = avatarPath.replace(/^\/+/, '').replace(/^avatars\//, '');
+      
+      const { data } = supabase.storage.from('avatars').getPublicUrl(cleanPath);
+      
+      if (!data?.publicUrl) {
+        return null;
+      }
+      
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error getting avatar URL:', error);
+      return null;
+    }
+  };
+  
   const fetchChats = async () => {
     if (!currentUser) return;
 
@@ -98,17 +147,25 @@ function ChatListScreen() {
         return;
       }
 
-      // Get unique user IDs from the messages
+      console.log('Fetched messages:', messages?.length || 0);
+
+      // Get unique user IDs from the messages (excluding current user)
       const userIds = new Set<string>();
       messages?.forEach((message) => {
-        userIds.add(message.sender_id);
-        userIds.add(message.recipient_id);
+        if (message.sender_id !== currentUser.id) {
+          userIds.add(message.sender_id);
+        }
+        if (message.recipient_id !== currentUser.id) {
+          userIds.add(message.recipient_id);
+        }
       });
+
+      console.log('Unique user IDs to fetch:', Array.from(userIds));
 
       // Fetch profile data for all users involved in conversations
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, email, first_name, last_name, avatar_url')
         .in('id', Array.from(userIds));
 
       if (profilesError) {
@@ -117,8 +174,15 @@ function ChatListScreen() {
         return;
       }
 
+      console.log('Fetched profiles:', profiles);
+
       const profileMap = new Map<string, any>();
       profiles?.forEach((profile) => {
+        console.log(`Profile ${profile.username}:`, {
+          id: profile.id,
+          username: profile.username,
+          avatar_url: profile.avatar_url
+        });
         profileMap.set(profile.id, profile);
       });
 
@@ -132,10 +196,25 @@ function ChatListScreen() {
         const otherUser = profileMap.get(otherUserId);
 
         if (otherUser && !conversationMap.has(otherUserId)) {
+          // Get avatar URL with proper fallback
+          let avatarUrl = null;
+          if (otherUser.avatar_url) {
+            avatarUrl = getAvatarUrl(otherUser.avatar_url);
+            console.log(`Avatar URL for ${otherUser.username}:`, avatarUrl);
+          } else {
+            console.log(`No avatar_url for ${otherUser.username}`);
+          }
+
+          // Create display name
+          const displayName = otherUser.username || 
+                            `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 
+                            otherUser.email || 
+                            'Unknown User';
+
           conversationMap.set(otherUserId, {
             id: otherUserId,
-            name: otherUser.username || 'Unknown User',
-            avatar: otherUser.avatar_url ? { uri: getAvatarUrl(otherUser.avatar_url) } : defaultAvatar,
+            name: displayName,
+            avatar: avatarUrl, // Store the URL string
             sitterId: otherUserId,
             message: message.message_content,
             lastMessageTime: message.created_at,
@@ -157,6 +236,11 @@ function ChatListScreen() {
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
 
+      console.log('Final chat list:', chatList.map(chat => ({ 
+        name: chat.name, 
+        avatar: chat.avatar ? 'Has avatar' : 'No avatar' 
+      })));
+      
       setChats(chatList);
     } catch (error) {
       console.error('Error in fetchChats:', error);
@@ -164,12 +248,6 @@ function ChatListScreen() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getAvatarUrl = (avatarPath: string) => {
-    if (!avatarPath) return null;
-    const { data } = supabase.storage.from('avatars').getPublicUrl(avatarPath);
-    return data.publicUrl;
   };
 
   const formatLastMessageTime = (timestamp: string) => {
@@ -195,9 +273,12 @@ function ChatListScreen() {
   };
 
   const handlePress = (chat: ChatItem) => {
+    // For navigation, convert the avatar URL back to the proper format
+    const avatarSource = chat.avatar ? { uri: chat.avatar } : defaultAvatar;
+    
     navigation.navigate('MessageSitter', {
       sitterUsername: chat.name,
-      sitterAvatar: chat.avatar,
+      sitterAvatar: avatarSource,
       sitterId: chat.sitterId,
     });
   };
@@ -205,7 +286,7 @@ function ChatListScreen() {
   const renderChatItem = ({ item }: { item: ChatItem }) => (
     <TouchableOpacity style={styles.chatItem} onPress={() => handlePress(item)}>
       <View style={styles.avatarContainer}>
-        <Image source={item.avatar} style={styles.avatar} />
+        <AvatarImage avatarUrl={item.avatar} style={styles.avatar} />
       </View>
       <View style={styles.chatContent}>
         <View style={styles.chatHeader}>
@@ -236,9 +317,6 @@ function ChatListScreen() {
         {chats.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>No conversations yet</Text>
-            <Text style={styles.emptyStateSubtext}>
-              Start a conversation with a pet sitter to see your chats here
-            </Text>
           </View>
         ) : (
           <FlatList
@@ -353,12 +431,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 8,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 40,
   },
 });

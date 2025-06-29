@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -119,7 +120,6 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
         return;
       }
       
-      
       // Fetch user's services
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
@@ -151,7 +151,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
       } else {
         setServices(servicesData || []);
         
-       
+        // Fetch service images
         if (servicesData && servicesData.length > 0) {
           const imageUrls: { [key: string]: string } = {};
           
@@ -180,7 +180,6 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
     fetchProfile();
     fetchServices();
   }, []);
-
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -335,7 +334,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
     });
   };
 
-  const handleDeleteService = (service: Service) => {
+  const handleLongPressService = (service: Service) => {
     Alert.alert(
       `Delete ${service.name_of_service}`,
       'Are you sure you want to delete this service? This action cannot be undone.',
@@ -374,10 +373,6 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
         },
       ]
     );
-  };
-
-  const handleRefreshServices = () => {
-    fetchServices();
   };
 
   const getServiceImageUri = (service: Service) => {
@@ -455,10 +450,11 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
       <View style={styles.section}>
         <Text style={styles.label}>Any Other Pet-Related Skills</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, styles.otherSkillsInput]}
+          multiline
           value={other_pet_related_skills}
           onChangeText={set_other_pet_related_skills}
-          placeholder="e.g. Certified in pet first aid"
+          placeholder="e.g. Certified in pet first aid, grooming experience, training knowledge..."
           placeholderTextColor="gray"
         />
       </View>
@@ -479,13 +475,7 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
       </View>
 
       <View style={styles.section}>
-        <View style={styles.servicesHeader}>
-          <Text style={styles.label}>Services Provided</Text>
-          <TouchableOpacity onPress={handleRefreshServices} style={styles.refreshButton}>
-            <Text style={styles.refreshText}>🔄 Refresh</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.instructionText}>Tap to edit • Long press to delete</Text>
+        <Text style={styles.label}>Services</Text>
         
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -499,24 +489,32 @@ export default function EditPetSitterProfile({ route, navigation }: Props) {
             <TouchableOpacity
               key={service.service_id}
               style={styles.serviceCardLarge}
-              onPress={() => handleEditService(service)}
-              onLongPress={() => handleDeleteService(service)}
+              onLongPress={() => handleLongPressService(service)}
               delayLongPress={500}
+              activeOpacity={0.7}
             >
               <Image
                 source={getServiceImageUri(service)}
                 style={styles.serviceImageLarge}
               />
               <View style={styles.serviceInfoLarge}>
-                <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.serviceNameScrollContainer}
+                >
+                  <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
+                </ScrollView>
                 <Text style={styles.serviceType}>{service.service_type}</Text>
                 {service.pet_type && (
-                  <Text style={styles.petType}>Pet Type: {service.pet_type}</Text>
+                  <Text style={styles.petType}>For: {service.pet_type}</Text>
                 )}
-                <View style={styles.actionTextContainer}>
-                  <Text style={styles.moreDetails}>Edit Details →</Text>
-                  <Text style={styles.longPressHint}>Long press to delete</Text>
+                <View style={styles.serviceBottomRow}>
+                  <TouchableOpacity onPress={() => handleEditService(service)}>
+                    <Text style={styles.moreDetails}>Edit Details →</Text>
+                  </TouchableOpacity>
                 </View>
+                <Text style={styles.longPressHint}>Long press to delete</Text>
               </View>
             </TouchableOpacity>
           ))
@@ -537,7 +535,6 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
   },
-
   headerButton: {
     paddingVertical: 8,
     paddingHorizontal: 8,
@@ -578,31 +575,12 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 20,
   },
-  servicesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  refreshButton: {
-    padding: 5,
-  },
-  refreshText: {
-    fontSize: 14,
-    color: '#007AFF',
-  },
   label: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 5,
     marginTop: 10,
     color: '#844d3e',
-  },
-  instructionText: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-    marginBottom: 10,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -632,6 +610,10 @@ const styles = StyleSheet.create({
     height: 120,
     textAlignVertical: 'top',
   },
+  otherSkillsInput: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -646,44 +628,49 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     marginBottom: 16,
-    height: 170,
+    height: 150,
   },
   serviceImageLarge: {
     width: 150,
-    height: 140,
+    height: 120,
     borderRadius: 12,
-    margin: 15,
+    margin: 12,
     backgroundColor: '#eee',
     resizeMode: 'cover',
   },
   serviceInfoLarge: {
     flex: 1,
-    padding: 15,
+    padding: 12,
     justifyContent: 'space-between',
   },
+  serviceNameScrollContainer: {
+    maxHeight: 30,
+    marginBottom: 4,
+  },
   serviceTitle: {
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#8B0000',
   },
   serviceType: {
     fontSize: 16,
-    color: 'black',
-    marginVertical: 4,
+    color: '#666',
+    marginVertical: 2,
   },
   petType: {
     fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
+    color: '#8B0000',
+    fontWeight: '500',
+    marginBottom: 8,
   },
-  actionTextContainer: {
+  serviceBottomRow: {
     alignItems: 'flex-start',
+    marginBottom: 4,
   },
   moreDetails: {
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
-    marginBottom: 2,
   },
   longPressHint: {
     fontSize: 12,
