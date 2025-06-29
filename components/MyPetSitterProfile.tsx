@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
@@ -316,11 +317,14 @@ export default function MyPetSitterProfile({ navigation }: Props) {
           style={styles.avatar}
         />
         <Text style={styles.username}>{profile?.username || 'Username'}</Text>
-        <TouchableOpacity onPress={handleViewReviews}>
+        <View style={styles.reviewContainer}>
           <Text style={styles.reviewText}>
             ⭐ {sitter.average_stars?.toFixed(1) || '0.0'} | {reviewCount} Reviews
           </Text>
-        </TouchableOpacity>
+          <TouchableOpacity onPress={handleViewReviews}>
+            <Text style={styles.viewReviewsText}>View Reviews</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={styles.label}>About Me</Text>
@@ -347,7 +351,8 @@ export default function MyPetSitterProfile({ navigation }: Props) {
       <View style={styles.section}>
         <Text style={styles.label}>Any Other Pet-Related Skills</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, styles.aboutMeInput]}
+          multiline
           value={sitter.other_pet_related_skills}
           editable={false}
           placeholder="No additional skills specified"
@@ -397,7 +402,13 @@ export default function MyPetSitterProfile({ navigation }: Props) {
                 style={styles.serviceImageLarge}
               />
               <View style={styles.serviceInfoLarge}>
-                <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.serviceNameScrollContainer}
+                >
+                  <Text style={styles.serviceTitle}>{service.name_of_service}</Text>
+                </ScrollView>
                 <Text style={styles.serviceType}>{service.service_type}</Text>
                 {service.pet_type && (
                   <Text style={styles.petType}>For: {service.pet_type}</Text>
@@ -437,9 +448,18 @@ const styles = StyleSheet.create({
     color: '#8B0000',
     marginBottom: 5,
   },
+  reviewContainer: {
+    alignItems: 'center',
+    marginTop: 5,
+  },
   reviewText: {
     fontSize: 14,
     color: 'black',
+    marginBottom: 5,
+  },
+  viewReviewsText: {
+    fontSize: 14,
+    color: '#007AFF',
     textDecorationLine: 'underline',
   },
   section: {
@@ -494,6 +514,10 @@ const styles = StyleSheet.create({
     padding: 12,
     justifyContent: 'space-between',
   },
+  serviceNameScrollContainer: {
+    maxHeight: 30,
+    marginBottom: 4,
+  },
   serviceTitle: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -502,13 +526,13 @@ const styles = StyleSheet.create({
   serviceType: {
     fontSize: 16,
     color: '#666',
-    marginVertical: 4,
+    marginVertical: -20,
   },
   petType: {
     fontSize: 14,
     color: '#8B0000',
     fontWeight: '500',
-    marginBottom: 4,
+    marginBottom: -5,
   },
   moreDetails: {
     fontSize: 16,

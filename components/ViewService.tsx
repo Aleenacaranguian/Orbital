@@ -164,15 +164,19 @@ export default function ViewServiceScreen({ route }: Props) {
         </View>
 
         <Text style={styles.label}>Service Details</Text>
-        <View style={styles.readOnlyFieldLarge}>
-          <Text>{service.service_details || 'No additional details provided'}</Text>
+        <View style={styles.readOnlyFieldMultiline}>
+          <Text style={styles.multilineText}>
+            {service.service_details || 'No additional details provided'}
+          </Text>
         </View>
 
         {petSitter && (
           <>
             <Text style={styles.label}>About the Pet Sitter</Text>
-            <View style={styles.readOnlyFieldLarge}>
-              <Text>{petSitter.about_me || 'No description provided'}</Text>
+            <View style={styles.readOnlyFieldMultiline}>
+              <Text style={styles.multilineText}>
+                {petSitter.about_me || 'No description provided'}
+              </Text>
             </View>
 
             <Text style={styles.label}>Experience & Skills</Text>
@@ -184,13 +188,18 @@ export default function ViewServiceScreen({ route }: Props) {
               {renderToggleWithText('Works with animals professionally', petSitter.works_with_animals)}
               {renderToggleWithText('Volunteers with animals', petSitter.volunteers_with_animals)}
               {renderToggleWithText('Owns pets', petSitter.owns_pets)}
-              {petSitter.other_pet_related_skills && (
-                <View style={styles.readOnlySubField}>
-                  <Text style={styles.toggleLabel}>Other Skills:</Text>
-                  <Text style={styles.toggleValue}>{petSitter.other_pet_related_skills}</Text>
-                </View>
-              )}
             </View>
+
+            {petSitter.other_pet_related_skills && (
+              <>
+                <Text style={styles.label}>Other Pet-Related Skills</Text>
+                <View style={styles.readOnlyFieldMultiline}>
+                  <Text style={styles.multilineText}>
+                    {petSitter.other_pet_related_skills}
+                  </Text>
+                </View>
+              </>
+            )}
           </>
         )}
 
@@ -325,6 +334,19 @@ const styles = StyleSheet.create({
     minHeight: 80,
     justifyContent: 'center',
     marginBottom: 8,
+  },
+  readOnlyFieldMultiline: {
+    backgroundColor: '#f2f2f2',
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 50,
+    marginBottom: 8,
+  },
+  multilineText: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 22,
+    textAlign: 'left',
   },
   subCard: {
     backgroundColor: '#fef5ec',

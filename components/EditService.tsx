@@ -43,6 +43,7 @@ type Service = {
 type HomeStackParamList = {
   EditService: { service: Service };
   ProfileScreen: undefined; 
+  Home: undefined; // Add Home to the type definition
 };
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'EditService'>;
@@ -124,6 +125,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       setHousingType(selectedType);
     }
   }
+
 
   const uploadServiceImage = async (imageUri: string, serviceName: string) => {
     try {
@@ -272,8 +274,11 @@ export default function EditServiceScreen({ route, navigation }: Props) {
         {
           text: 'OK',
           onPress: () => {
-        
-            navigation.goBack();
+            // Navigate to Home screen and reset the navigation stack
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            });
           }
         }
       ]);

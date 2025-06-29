@@ -187,7 +187,7 @@ function ProfileScreen({ navigation }: { navigation: any }) {
         <Image
           source={profile?.avatar_url 
             ? { uri: profile.avatar_url } 
-            : require('../assets/profilepic.png')}
+            : require('../assets/default-profile.png')}
           style={styles.avatar}
         />
 
@@ -319,9 +319,9 @@ const styles = StyleSheet.create({
     color: '#8B0000',
   },
   avatar: {
-    width: 180,
-    height: 180,
-    borderRadius: 85,
+    width: 140,
+    height: 140,
+    borderRadius: 150,
     marginVertical: 8,
   },
   username: {

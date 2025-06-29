@@ -62,12 +62,14 @@ const housingTypes = [
 export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   const { service, selectedPets, fromDate, toDate } = route.params;
   const [sitterInfo, setSitterInfo] = useState<SitterInfo | null>(null);
+  const [serviceDetails, setServiceDetails] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     fetchCurrentUser();
     fetchSitterInfo();
+    fetchCompleteServiceDetails();
   }, [service.id]);
 
   const fetchCurrentUser = async () => {
@@ -76,6 +78,61 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
       setCurrentUser(user);
     } catch (error) {
       console.error('Error fetching current user:', error);
+    }
+  };
+
+  const fetchCompleteServiceDetails = async () => {
+    try {
+      let serviceData = null;
+      let serviceError = null;
+      
+      // First try with service_id if it exists
+      if (service.service_id) {
+        const result = await supabase
+          .from('services')
+          .select('*')
+          .eq('service_id', service.service_id)
+          .single();
+        
+        serviceData = result.data;
+        serviceError = result.error;
+      }
+      
+      // If that fails, try with id
+      if (!serviceData && service.id) {
+        const result = await supabase
+          .from('services')
+          .select('*')
+          .eq('id', service.id)
+          .single();
+        
+        serviceData = result.data;
+        serviceError = result.error;
+      }
+      
+      // If still no data, try querying by sitter id and service name
+      if (!serviceData) {
+        const result = await supabase
+          .from('services')
+          .select('*')
+          .eq('id', service.id)
+          .eq('name_of_service', service.name_of_service || service.service_type);
+        
+        if (result.data && result.data.length > 0) {
+          serviceData = result.data[0];
+          serviceError = null;
+        } else {
+          serviceError = result.error;
+        }
+      }
+      
+      if (serviceError || !serviceData) {
+        setServiceDetails(service);
+      } else {
+        setServiceDetails(serviceData);
+      }
+    } catch (error) {
+      setServiceDetails(service); // Fallback to route params
     }
   };
 
@@ -91,7 +148,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         .single();
       
       if (profileError) {
-        console.error('Error fetching profile:', profileError);
         Alert.alert('Error', 'Failed to load sitter profile information');
         return;
       }
@@ -104,7 +160,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         .single();
       
       if (petSitterError) {
-        console.error('Error fetching pet sitter info:', petSitterError);
         Alert.alert('Error', 'Failed to load pet sitter information');
         return;
       }
@@ -114,7 +169,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         petSitter: petSitterData
       });
     } catch (error) {
-      console.error('Error in fetchSitterInfo:', error);
       Alert.alert('Error', 'Failed to load sitter information');
     } finally {
       setLoading(false);
@@ -122,13 +176,14 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   };
 
   const getServiceImageUri = () => {
-    if (service.service_url) {
-      if (service.service_url.startsWith('http')) {
-        return { uri: service.service_url };
+    const currentService = serviceDetails || service;
+    if (currentService.service_url) {
+      if (currentService.service_url.startsWith('http')) {
+        return { uri: currentService.service_url };
       }
       const { data } = supabase.storage
         .from('services')
-        .getPublicUrl(service.service_url);
+        .getPublicUrl(currentService.service_url);
       return { uri: data.publicUrl };
     }
     return defaultServiceImage;
@@ -162,7 +217,8 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   };
 
   const createDefaultMessage = () => {
-    const serviceName = service.name_of_service || service.service_type;
+    const currentService = serviceDetails || service;
+    const serviceName = currentService.name_of_service || currentService.service_type;
   
     const fromDateStr = fromDate ? new Date(fromDate).toLocaleString() : 'TBD';
     const toDateStr = toDate ? new Date(toDate).toLocaleString() : 'TBD';
@@ -197,15 +253,13 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   • Service: ${serviceName}
   • From: ${fromDateStr}
   • To: ${toDateStr}
-  • Rate: $${service.price || 'TBD'} per hour
+  • Rate: $${currentService.price || 'TBD'} per hour
   
   Pet Information:
   ${petDetails}
   
   I'm interested in booking this service. Could you please let me know your availability and if you have any questions about my pet(s)?`;
   };
-  
-
   
   const handleSendMessage = async () => {
     try {
@@ -219,7 +273,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         return;
       }
   
-    //Check if user is messaging himself 
+      //Check if user is messaging himself 
       if (currentUser.id === sitterInfo.profile.id) {
         Alert.alert('Error', 'You cannot send a message to yourself');
         return;
@@ -240,7 +294,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         .single();
   
       if (messageError) {
-        console.error('Error sending message:', messageError);
         Alert.alert('Error', 'Failed to send message. Please try again.');
         return;
       }
@@ -261,7 +314,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
       );
   
     } catch (error) {
-      console.error('Error in handleSendMessage:', error);
       Alert.alert('Error', 'Failed to send message');
     }
   };
@@ -274,6 +326,8 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
     );
   }
 
+  const currentService = serviceDetails || service;
+
   return (
     <ScrollView style={styles.container}>
       <Image
@@ -282,7 +336,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
       />
 
       <View style={styles.bigCard}>
-        <Text style={styles.serviceName}>{service.name_of_service || 'Untitled Service'}</Text>
+        <Text style={styles.serviceName}>{currentService.name_of_service || 'Untitled Service'}</Text>
 
         <View style={styles.sitterSection}>
           <Image source={getSitterImageUri()} style={styles.sitterImage} />
@@ -292,7 +346,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
               <Text style={styles.goldStar}>★</Text>
               <Text style={styles.ratingNumber}>{sitterInfo?.petSitter?.average_stars?.toFixed(1) || '0.0'}</Text>
               <TouchableOpacity onPress={handleViewReviews} style={styles.viewReviewsButton}>
-                <Text style={styles.viewReviewsText}>View reviews</Text>
+                <Text style={styles.viewReviewsText}>View Reviews</Text>
               </TouchableOpacity>
             </View>
             {sitterInfo?.petSitter?.years_of_experience && (
@@ -312,49 +366,49 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
 
         <Text style={styles.label}>Service Type</Text>
         <View style={styles.readOnlyField}>
-          <Text>{service.service_type}</Text>
+          <Text>{currentService.service_type}</Text>
         </View>
 
         <Text style={styles.label}>Rate per Hour</Text>
         <View style={styles.readOnlyField}>
-          <Text>${service.price || '0'}</Text>
+          <Text>${currentService.price || '0'}</Text>
         </View>
 
         <Text style={styles.label}>Pet Type Accepted</Text>
         <View style={styles.readOnlyField}>
-          <Text>{service.pet_type || 'All pets'}</Text>
+          <Text>{currentService.pet_type || 'All pets'}</Text>
         </View>
 
-        {service.pet_preferences && (
+        {currentService.pet_preferences && (
           <>
             <Text style={styles.label}>Pet Preferences</Text>
             <View style={styles.readOnlyField}>
-              <Text>{service.pet_preferences}</Text>
+              <Text>{currentService.pet_preferences}</Text>
             </View>
           </>
         )}
 
-        {service.service_details && (
-          <>
-            <Text style={styles.label}>Service Details</Text>
-            <View style={styles.readOnlyFieldLarge}>
-              <Text>{service.service_details}</Text>
-            </View>
-          </>
-        )}
+        <Text style={styles.label}>Service Details</Text>
+        <View style={styles.readOnlyFieldLarge}>
+          <Text>
+            {currentService.service_details && currentService.service_details.trim() !== '' 
+              ? currentService.service_details 
+              : 'No additional service details provided.'}
+          </Text>
+        </View>
 
         <Text style={styles.label}>Service Environment</Text>
         <View style={styles.subCard}>
-          {renderToggle('No other dogs present', service.no_other_dogs_present)}
-          {renderToggle('No other cats present', service.no_other_cats_present)}
-          {renderToggle('No children present', service.no_children_present)}
-          {renderToggle('No adults present', service.no_adults_present)}
-          {renderToggle('Sitter present throughout service', service.sitter_present_throughout_service)}
-          {renderToggle('Accepts unsterilised pets', service.accepts_unsterilised_pets)}
-          {renderToggle('Accepts pets with transmissible health issues', service.accepts_pets_with_transmissible_health_issues)}
+          {renderToggle('No other dogs present', currentService.no_other_dogs_present)}
+          {renderToggle('No other cats present', currentService.no_other_cats_present)}
+          {renderToggle('No children present', currentService.no_children_present)}
+          {renderToggle('No adults present', currentService.no_adults_present)}
+          {renderToggle('Sitter present throughout service', currentService.sitter_present_throughout_service)}
+          {renderToggle('Accepts unsterilised pets', currentService.accepts_unsterilised_pets)}
+          {renderToggle('Accepts pets with transmissible health issues', currentService.accepts_pets_with_transmissible_health_issues)}
         </View>
 
-        {service.housing_type && (
+        {currentService.housing_type && (
           <>
             <Text style={styles.label}>Housing Type</Text>
             <View style={styles.subCard}>
@@ -362,17 +416,16 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
                 <View style={styles.toggleRow} key={ht}>
                   <Text style={styles.toggleLabel}>{ht}</Text>
                   <Switch
-                    value={service.housing_type === ht}
+                    value={currentService.housing_type === ht}
                     disabled
                     trackColor={{ false: '#ccc', true: '#4CAF50' }}
-                    thumbColor={service.housing_type === ht ? 'white' : '#f4f3f4'}
+                    thumbColor={currentService.housing_type === ht ? 'white' : '#f4f3f4'}
                   />
                 </View>
               ))}
             </View>
           </>
         )}
-
 
         {sitterInfo?.petSitter?.other_pet_related_skills && (
           <>
@@ -403,7 +456,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
             </View>
           </>
         )}
-
 
         {fromDate && toDate && (
           <>
