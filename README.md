@@ -1,11 +1,10 @@
-Orbital 2025 - Milestone 1
+Orbital 2025 - Milestone 2
 
 Team Name: 
 PawPals 
 
 Proposed Level of Achievement: 
 Project Gemini 
-
 MOTIVATION
 As dog owners, we struggle to find a trustable platform to book capable dog caretakers to take care of our pets within our budget—especially when we are overseas or during busy work periods. PawPals offers the perfect solution by connecting pet owners with trusted caretakers who can meet their pets' specific needs.
 
@@ -23,65 +22,59 @@ SCOPE OF PROJECT
 This mobile application connects pet owners with trusted pet-sitters. It supports profile creation, booking management, real-time communication, and community engagement through forums and blogs.
 
 Features to be completed by the mid of June:
-
 Authentication System
-User registration, login 
-Redirect to pet(s) profile setup after signup
-
+- User registration, login 
 User Profiles
-Pet owner profile: Name, contact info, postal code, profile picture
-Pet sitter profile: Name, years of experience, relevant skills, service details
-Pet(s) profile: Name, pet type, age, breed, size, health needs, photos
-
+- Pet owner profile: Name, contact info, postal code, profile picture
+- Pet sitter profile: Name, years of experience, relevant skills, service details
+- Pet(s) profile: Name, pet type, age, breed, size, health information, photo
 Search System
-Search for pet-sitters by pet type, service type, dates 
-Filter by price range and ratings
-View search results with service details of each sitter
-
+- Search for pet-sitters by pet type, service type, dates and timings
+- Filter by price range and ratings
+- View search results with service details of each sitter
 Review & Rate
-Write reviews for each sitter
-Rate their service out of 5 stars
-Seen on sitter’s profiles
+- Write reviews for each sitter
+- Rate their service out of 5 stars
+- Seen on sitter’s profiles
+Messaging System
+- Chat list, message thread
+- Button to review and rate sitters
 
 Features to be completed by the mid of July:
-
-Messaging System
-Chat list, message thread
-Prompt to review and rate sitters
-
 Community Page
-Forum posts, blog posts, comments/likes, photo sharing
-Search for posts by keywords
+- Forum posts, blog posts, comments/likes, photo sharing
+- Search for posts by keywords
+
 TECH STACK
-React
-React Router
-Tailwind CSS
-Supabase
-Github
+React Native — Used for mobile app development. Provides a cross-platform solution using a single JavaScript/TypeScript codebase.
+Supabase — Serves as our backend-as-a-service and database. Handles user authentication, stores user data in a Postgres database, and manages file storage (e.g., profile pictures) through Supabase Storage.
+GitHub — Used for version control and collaboration. Allows us to track changes, work safely on branches, review pull requests, and manage our project codebase effectively.
+
+SWE PRACTICES
+Component-Based Design
+- Built using modular React components to encourage reuse across the app
+- Keeps the codebase more structured and easier to manage
+- Each component functions independently
+Single Responsibility Principle (SRP) 
+- Each component or function has one clear purpose
+- Results in cleaner, easier-to-test code
+- Simplifies future updates and maintenance 
+Version Control with Git/Github
+- Tracks code changes and progress more efficiently
+- Facilitates collaboration more seamlessly
+Logical Folder Structure
+- Clear and organised folders for components, pages, hooks and services
+- Encourages consistent and scalable development practices
+
 UNIQUE SELLING POINT
 Support for a Wider Range of Pets
-The application extends support to pets beyond just dogs and cats — including fish, rabbits, birds and more, with sitters capable of catering to their different unique care needs.
-
+- The application extends support to pets beyond just dogs and cats — including fish, rabbits, birds and more, with sitters capable of catering to their different unique care needs.
 Real-Time Updates 
-Sitters can message owners while the pets are in their care to provide reassurance to their owners. This allows owners to still feel connected to their pets.
-
+- Sitters can message owners while the pets are in their care to provide reassurance to their owners. This allows owners to still feel connected to their pets.
 Community
-Our community page allows pet owners and sitters to connect, share advice and support.
+- Our community page allows pet owners and sitters to connect, share advice and support.
 
-DEVELOPMENT PLAN
-3rd week of May: Finalized pitch for Lift-off
-4th week of May: Created app mockup
-5th week of May: Pick up necessary technologies - React, Tailwind CSS, Supabase, Github & Start on core features - frontend and backend
-1st week of June: Finalise frontend and backend & Finalise materials for Milestone 1
-2nd week of June: Start on core features - search system and review & rate
-3rd week of June: Finalise search system and review & rate
-4th week of June: Testing and debugging & Finalise materials for Milestone 2
-1st week of July: Make necessary changes to core features 
-2nd week of July: Start on extension features
-3rd week of July:  Finalise extension features
-4th week of July: Testing and debugging & Finalise materials for Milestone 3
 MOCK UP
-https://www.figma.com/design/JyD1iCEdVKwVFyXRZQ1WDP/PawPals?node-id=0-1&t=KUi0DMJBoMmoo971-1
+https://www.figma.com/design/JyD1iCEdVKwVFyXRZQ1WDP/PawPals?node-id=0-1&t=KUi0DMJBoMmoo971-1 (please note that page 3 will not be used)
 
-TECHNICAL PROOF
 
