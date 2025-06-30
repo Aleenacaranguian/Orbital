@@ -136,10 +136,10 @@ export default function EditServiceScreen({ route, navigation }: Props) {
       
       // Sanitize the service name to create a valid filename
       const sanitizedServiceName = (serviceName || 'service')
-        .replace(/[^a-zA-Z0-9]/g, '_') // Replace any non-alphanumeric character with underscore
-        .replace(/_+/g, '_') // Replace multiple underscores with single underscore
-        .replace(/^_|_$/g, '') // Remove leading/trailing underscores
-        .toLowerCase(); // Convert to lowercase for consistency
+        .replace(/[^a-zA-Z0-9]/g, '_') 
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '') 
+        .toLowerCase(); 
       
       const fileName = `${service.service_id}_${sanitizedServiceName}_${Date.now()}.${fileExt}`;
   
@@ -274,7 +274,6 @@ export default function EditServiceScreen({ route, navigation }: Props) {
         {
           text: 'OK',
           onPress: () => {
-            // Navigate to Home screen and reset the navigation stack
             navigation.reset({
               index: 0,
               routes: [{ name: 'Home' }],

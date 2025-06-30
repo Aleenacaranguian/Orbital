@@ -55,7 +55,7 @@ export default function MessageSitterScreen() {
   const [canReview, setCanReview] = useState(false);
   const [conversationOwner, setConversationOwner] = useState<string | null>(null);
 
-  // Review modal states
+  
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewDescription, setReviewDescription] = useState('');
@@ -68,7 +68,7 @@ export default function MessageSitterScreen() {
 
   const sitterIdString = sitterId;
 
-  // Cleanup function
+  
   const cleanupSubscriptions = useCallback(() => {
     if (messageChannelRef.current) {
       messageChannelRef.current.unsubscribe();
@@ -181,7 +181,7 @@ export default function MessageSitterScreen() {
         if (data && data.length > 0) {
           const latestMessage = data[data.length - 1];
           
-          // Only update if we have new messages
+          // Only update if have new messages
           if (!lastMessageTimestampRef.current || 
               new Date(latestMessage.created_at) > new Date(lastMessageTimestampRef.current)) {
             
@@ -189,7 +189,7 @@ export default function MessageSitterScreen() {
             determineConversationOwnership(data);
             lastMessageTimestampRef.current = latestMessage.created_at;
             
-            // Auto-scroll without animation
+           
             setTimeout(() => {
               flatListRef.current?.scrollToEnd({ animated: false });
             }, 100);
@@ -201,13 +201,13 @@ export default function MessageSitterScreen() {
     }, 2000); 
   }, [currentUser, sitterIdString]);
 
-  // Try real-time first, fallback to polling
+  
   const setupRealtimeOrPolling = useCallback(() => {
     if (!currentUser || !sitterIdString) return;
 
     cleanupSubscriptions();
 
-    // Use a unique channel name to avoid conflicts
+   
     const channelName = `messages-conversation-${Date.now()}`;
 
     messageChannelRef.current = supabase
@@ -235,7 +235,6 @@ export default function MessageSitterScreen() {
       
             if (isRelevantMessage && newMessage.sender_id !== currentUser.id) {
               setChatMessages(prev => {
-                // Check for duplicates
                 const exists = prev.some(msg => msg.id === newMessage.id);
                 if (exists) return prev;
                 
@@ -272,7 +271,7 @@ export default function MessageSitterScreen() {
         }
       });
 
-    // Set a timeout to fallback to polling if real-time doesn't connect within 5 seconds
+   
     setTimeout(() => {
       if (!isRealtimeConnected) {
         startPolling();
@@ -303,10 +302,10 @@ export default function MessageSitterScreen() {
 
       setChatMessages(data || []);
       
-      // Determine conversation ownership
+     
       determineConversationOwnership(data || []);
       
-      // Update last message timestamp for polling
+      
       if (data && data.length > 0) {
         lastMessageTimestampRef.current = data[data.length - 1].created_at;
       }
@@ -348,7 +347,7 @@ export default function MessageSitterScreen() {
 
     setChatMessages(prev => {
       const updatedMessages = [...prev, optimisticMessage];
-      // Update conversation ownership when sending message
+      
       determineConversationOwnership(updatedMessages);
       return updatedMessages;
     });
@@ -875,7 +874,7 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: '#ccc',
   },
-  // Review Modal Styles
+  // Review styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
