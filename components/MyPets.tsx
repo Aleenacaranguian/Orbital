@@ -106,7 +106,7 @@ export default function MyPets() {
     }
   };
 
-  // Add pet entry to Supabase
+  // Add new pet to Supabase
   const handleAddPet = async () => {
     if (!newPetName.trim()) {
       Alert.alert('Error', 'Please enter a pet name.');
@@ -174,7 +174,7 @@ export default function MyPets() {
     }
   };
 
-  // Delete pet and image from Supabase
+  
   const handleDeletePet = async (petName: string) => {
     Alert.alert(
       'Delete Pet',
@@ -223,10 +223,10 @@ export default function MyPets() {
     );
   };
 
-  // Pick image from gallery
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'], // Fixed: Changed from ImagePicker.MediaTypeOptions.Images to ['images']
+      mediaTypes: ['images'], 
       allowsEditing: true,
       quality: 1,
     });

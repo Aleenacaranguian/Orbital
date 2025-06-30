@@ -43,7 +43,7 @@ type ChatListScreenNavigationProp = NativeStackNavigationProp<
   'ChatList'
 >;
 
-// Avatar component with better error handling
+
 const AvatarImage = ({ avatarUrl, style }: { avatarUrl: string | null, style: any }) => {
   const [imageError, setImageError] = useState(false);
   
@@ -101,12 +101,11 @@ function ChatListScreen() {
     }
     
     try {
-      // Check if the avatarPath is already a full URL
+    
       if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
         return avatarPath;
       }
       
-      // Clean the path - remove any leading slashes or 'avatars/' prefix
       const cleanPath = avatarPath.replace(/^\/+/, '').replace(/^avatars\//, '');
       
       const { data } = supabase.storage.from('avatars').getPublicUrl(cleanPath);
@@ -121,14 +120,14 @@ function ChatListScreen() {
       return null;
     }
   };
-  
+
   const fetchChats = async () => {
     if (!currentUser) return;
 
     try {
       setLoading(true);
 
-      // Get all conversations where current user is either sender or recipient
+     
       const { data: messages, error: messagesError } = await supabase
         .from('messages')
         .select(`
@@ -162,7 +161,7 @@ function ChatListScreen() {
 
       console.log('Unique user IDs to fetch:', Array.from(userIds));
 
-      // Fetch profile data for all users involved in conversations
+     
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, email, first_name, last_name, avatar_url')
@@ -186,17 +185,17 @@ function ChatListScreen() {
         profileMap.set(profile.id, profile);
       });
 
-      // Group messages by conversation partner
+      
       const conversationMap = new Map<string, any>();
 
       messages?.forEach((message) => {
-        // Determine who the other person in the conversation is
+        
         const isCurrentUserSender = message.sender_id === currentUser.id;
         const otherUserId = isCurrentUserSender ? message.recipient_id : message.sender_id;
         const otherUser = profileMap.get(otherUserId);
 
         if (otherUser && !conversationMap.has(otherUserId)) {
-          // Get avatar URL with proper fallback
+        
           let avatarUrl = null;
           if (otherUser.avatar_url) {
             avatarUrl = getAvatarUrl(otherUser.avatar_url);
@@ -205,7 +204,7 @@ function ChatListScreen() {
             console.log(`No avatar_url for ${otherUser.username}`);
           }
 
-          // Create display name
+         
           const displayName = otherUser.username || 
                             `${otherUser.first_name || ''} ${otherUser.last_name || ''}`.trim() || 
                             otherUser.email || 
@@ -214,14 +213,14 @@ function ChatListScreen() {
           conversationMap.set(otherUserId, {
             id: otherUserId,
             name: displayName,
-            avatar: avatarUrl, // Store the URL string
+            avatar: avatarUrl, 
             sitterId: otherUserId,
             message: message.message_content,
             lastMessageTime: message.created_at,
             messages: [message]
           });
         } else if (otherUser && conversationMap.has(otherUserId)) {
-          // Only update if this message is more recent
+          
           const existing = conversationMap.get(otherUserId);
           if (new Date(message.created_at) > new Date(existing.lastMessageTime)) {
             existing.message = message.message_content;
@@ -231,7 +230,7 @@ function ChatListScreen() {
         }
       });
 
-      // Convert map to array and sort by last message time
+     
       const chatList = Array.from(conversationMap.values()).sort((a, b) => 
         new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
       );
@@ -273,7 +272,7 @@ function ChatListScreen() {
   };
 
   const handlePress = (chat: ChatItem) => {
-    // For navigation, convert the avatar URL back to the proper format
+   
     const avatarSource = chat.avatar ? { uri: chat.avatar } : defaultAvatar;
     
     navigation.navigate('MessageSitter', {

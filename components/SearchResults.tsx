@@ -31,7 +31,7 @@ type PetSitter = {
   created_at?: string;
 };
 
-// profile attributes 
+// Profile attributes 
 type Profile = {
   id: string;
   username: string;

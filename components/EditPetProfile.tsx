@@ -18,7 +18,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import { supabase } from '../lib/supabase';
-import { HomeStackParamList, Pet } from './Home';
+import { HomeStackParamList } from './Home';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'EditPetProfile'>;
 
@@ -293,7 +293,7 @@ export default function EditPetProfile({ route, navigation }: Props) {
            year >= 1900 && year <= new Date().getFullYear();
   };
 
-  // Get image source - either from Supabase URL or default
+ 
   const getImageSource = () => {
     if (petUrl) {
       return { uri: getPetImageUrl(petUrl) };
