@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -9,10 +9,34 @@ import Home from './components/Home'
 import Search from './components/Search'
 import Messaging from './components/Messaging'
 import Community from './components/Community'
+import PressPost from './components/PressPost'
+import CreatePost from './components/CreatePost'
 import { Ionicons } from '@expo/vector-icons'
 
 const Tab = createBottomTabNavigator()
-const Stack = createNativeStackNavigator()
+const CommunityStack = createNativeStackNavigator()
+
+function CommunityStackScreen() {
+  return (
+    <CommunityStack.Navigator>
+      <CommunityStack.Screen
+        name="CommunityMain"
+        component={Community}
+        options={{ title: 'Community' }}
+      />
+      <CommunityStack.Screen
+        name="PressPost"
+        component={PressPost}
+        options={{ title: 'Press Post' }}
+      />
+      <CommunityStack.Screen
+        name="CreatePost"
+        component={CreatePost}
+        options={{ title: 'Create Post' }}
+      />
+    </CommunityStack.Navigator>
+  )
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -22,9 +46,13 @@ export default function App() {
       setSession(session)
     })
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
+
+    return () => {
+      authListener?.subscription.unsubscribe()
+    }
   }, [])
 
   if (!session) {
@@ -43,9 +71,7 @@ export default function App() {
               Messaging: 'chatbubble-outline',
               Community: 'heart-outline',
             }
-
             const iconName = iconMap[route.name] || 'help-circle-outline'
-
             return <Ionicons name={iconName} size={size} color={color} />
           },
           tabBarActiveTintColor: '#000',
@@ -56,7 +82,11 @@ export default function App() {
         <Tab.Screen name="Home" component={Home} />
         <Tab.Screen name="Search" component={Search} />
         <Tab.Screen name="Messaging" component={Messaging} />
-        <Tab.Screen name="Community" component={Community} />
+        <Tab.Screen
+          name="Community"
+          component={CommunityStackScreen}
+          options={{ headerShown: false }}
+        />
       </Tab.Navigator>
     </NavigationContainer>
   )
