@@ -111,7 +111,7 @@ export default function Community({ navigation }: Props) {
           <TouchableOpacity
             key={post.id}
             style={[styles.card, { marginBottom: 20 }]}
-            onPress={() => navigation.navigate('PressPost', { post })}
+            onPress={() => navigation.navigate('PressPost', { post: post, comments: post.commentsData || [], })}
           >
             <View style={styles.rowBetween}>
               <View style={styles.avatarRow}>

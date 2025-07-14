@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 
@@ -42,11 +43,24 @@ type RootStackParamList = {
 type Props = NativeStackScreenProps<RootStackParamList, 'PressPost'>
 
 export default function PressPost({ route, navigation }: Props) {
-  const { post: initialPost, comments: initialComments } = route.params
+  const params = route.params
+
+  if (!params) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Error: Missing post data</Text>
+      </View>
+    )
+  }
+
+  const { post: initialPost, comments: initialComments } = params
 
   // State for main post likes and toggle
   const [postLikes, setPostLikes] = useState(initialPost.likes)
   const [postLiked, setPostLiked] = useState(false)
+
+  // Comments state that can be updated when new comments added
+  const [comments, setComments] = useState(initialComments)
 
   // State for comment likes keyed by comment id
   const [commentsLikes, setCommentsLikes] = useState(() =>
@@ -58,6 +72,9 @@ export default function PressPost({ route, navigation }: Props) {
 
   // Expanded replies tracker
   const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set())
+
+  // State for new comment input
+  const [newCommentText, setNewCommentText] = useState('')
 
   function togglePostLike() {
     if (postLiked) {
@@ -86,20 +103,38 @@ export default function PressPost({ route, navigation }: Props) {
     })
   }
 
+  function onSendComment() {
+    if (!newCommentText.trim()) {
+      Alert.alert('Error', 'Please enter a comment before sending.')
+      return
+    }
+
+    // Create new comment object
+    const newComment = {
+      id: Date.now(), // simplistic unique id using timestamp
+      username: 'You', // or get current logged-in username dynamically
+      time: 'Just now',
+      text: newCommentText.trim(),
+      likes: 0,
+      avatar: require('../assets/profilepic.png'), // your own avatar or default
+      replies: [],
+    }
+
+    // Add new comment at the front of the list
+    setComments([newComment, ...comments])
+
+    // Also update the likes state for new comment
+    setCommentsLikes(prev => ({
+      ...prev,
+      [newComment.id]: { likes: 0, liked: false },
+    }))
+
+    // Clear input box
+    setNewCommentText('')
+  }
+
   return (
     <View style={styles.container}>
-      {/* Search bar + Create post */}
-      <View style={styles.rowBetween}>
-        <TextInput
-          placeholder="Hinted search text"
-          placeholderTextColor="#666"
-          style={styles.searchInput}
-        />
-        <TouchableOpacity style={styles.createPostButton}>
-          <Text style={styles.createPostText}>+ Create Post</Text>
-        </TouchableOpacity>
-      </View>
-
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.card}>
           {/* Original Post */}
@@ -122,12 +157,12 @@ export default function PressPost({ route, navigation }: Props) {
             </TouchableOpacity>
             <View style={styles.reaction}>
               <Text style={styles.emoji}>💬</Text>
-              <Text>{initialPost.comments}</Text>
+              <Text>{comments.length}</Text>
             </View>
           </View>
 
           {/* Comments */}
-          {initialComments.map(comment => {
+          {comments.map(comment => {
             const { liked, likes } = commentsLikes[comment.id] || {
               liked: false,
               likes: comment.likes,
@@ -195,8 +230,11 @@ export default function PressPost({ route, navigation }: Props) {
           placeholder="Comment"
           style={styles.commentInput}
           placeholderTextColor="#666"
+          value={newCommentText}
+          onChangeText={setNewCommentText}
+          multiline
         />
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onSendComment}>
           <Text style={styles.sendArrow}>➤</Text>
         </TouchableOpacity>
       </View>
@@ -211,42 +249,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  rowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  searchInput: {
+  errorContainer: {
     flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    marginRight: 10,
-    fontSize: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  createPostButton: {
-    backgroundColor: '#FFF176',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  createPostText: {
-    fontWeight: '600',
-    fontSize: 16,
+  errorText: {
+    fontSize: 18,
+    color: 'red',
   },
   scrollContainer: {
     paddingBottom: 100,
