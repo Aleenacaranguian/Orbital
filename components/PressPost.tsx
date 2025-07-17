@@ -55,14 +55,11 @@ export default function PressPost({ route, navigation }: Props) {
 
   const { post: initialPost, comments: initialComments } = params
 
-  // State for main post likes and toggle
   const [postLikes, setPostLikes] = useState(initialPost.likes)
   const [postLiked, setPostLiked] = useState(false)
 
-  // Comments state that can be updated when new comments added
   const [comments, setComments] = useState(initialComments)
 
-  // State for comment likes keyed by comment id
   const [commentsLikes, setCommentsLikes] = useState(() =>
     initialComments.reduce((acc, c) => {
       acc[c.id] = { likes: c.likes, liked: false }
@@ -70,10 +67,8 @@ export default function PressPost({ route, navigation }: Props) {
     }, {} as Record<number, { likes: number; liked: boolean }>)
   )
 
-  // Expanded replies tracker
   const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set())
 
-  // State for new comment input
   const [newCommentText, setNewCommentText] = useState('')
 
   function togglePostLike() {
@@ -111,25 +106,22 @@ export default function PressPost({ route, navigation }: Props) {
 
     // Create new comment object
     const newComment = {
-      id: Date.now(), // simplistic unique id using timestamp
-      username: 'You', // or get current logged-in username dynamically
+      id: Date.now(), 
+      username: 'You',
       time: 'Just now',
       text: newCommentText.trim(),
       likes: 0,
-      avatar: require('../assets/profilepic.png'), // your own avatar or default
+      avatar: require('../assets/profilepic.png'), 
       replies: [],
     }
 
-    // Add new comment at the front of the list
     setComments([newComment, ...comments])
 
-    // Also update the likes state for new comment
     setCommentsLikes(prev => ({
       ...prev,
       [newComment.id]: { likes: 0, liked: false },
     }))
 
-    // Clear input box
     setNewCommentText('')
   }
 
