@@ -46,6 +46,7 @@ type PetSitter = {
 type SitterInfo = {
   profile: Profile;
   petSitter: PetSitter;
+  calculatedRating: number; // Add calculated rating
 };
 
 const defaultServiceImage = require('../assets/petsitter.png');
@@ -163,10 +164,27 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         Alert.alert('Error', 'Failed to load pet sitter information');
         return;
       }
+
+      // Fetch reviews data for real-time rating calculation
+      const { data: reviewsData, error: reviewsError } = await supabase
+        .from('reviews')
+        .select('to_id, stars_int')
+        .eq('to_id', service.id);
+
+      if (reviewsError) {
+        console.error('Error fetching reviews:', reviewsError);
+      }
+
+      // Calculate real-time rating from reviews
+      const userReviews = reviewsData?.map(review => review.stars_int).filter(Boolean) || [];
+      const calculatedRating = userReviews.length > 0 
+        ? userReviews.reduce((sum, stars) => sum + stars, 0) / userReviews.length 
+        : petSitterData?.average_stars || 0;
       
       setSitterInfo({
         profile: profileData,
-        petSitter: petSitterData
+        petSitter: petSitterData,
+        calculatedRating: calculatedRating
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to load sitter information');
@@ -344,7 +362,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
             <Text style={styles.sitterName}>{sitterInfo?.profile?.username || 'Unknown Sitter'}</Text>
             <View style={styles.ratingRow}>
               <Text style={styles.goldStar}>★</Text>
-              <Text style={styles.ratingNumber}>{sitterInfo?.petSitter?.average_stars?.toFixed(1) || '0.0'}</Text>
+              <Text style={styles.ratingNumber}>{sitterInfo?.calculatedRating?.toFixed(1) || '0.0'}</Text>
               <TouchableOpacity onPress={handleViewReviews} style={styles.viewReviewsButton}>
                 <Text style={styles.viewReviewsText}>View Reviews</Text>
               </TouchableOpacity>
