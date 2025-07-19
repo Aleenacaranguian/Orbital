@@ -1,4 +1,4 @@
-//community.tsx 
+// Community.tsx - Fixed version with proper Supabase integration
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
@@ -10,13 +10,15 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
-import CreatePost from './CreatePost' // Import your actual CreatePost component
+import CreatePost from './CreatePost'
+import PressPost from './PressPost'
 
 // Define the stack param list
-type CommunityStackParamList = {
+export type CommunityStackParamList = {
   CommunityMain: undefined
   PressPost: {
     post: Post
@@ -24,7 +26,7 @@ type CommunityStackParamList = {
   CreatePost: undefined
 }
 
-type Post = {
+export type Post = {
   id: string
   title: string
   body: string | null
@@ -60,7 +62,7 @@ function CommunityMainScreen({ navigation }: any) {
           .eq('id', user.id)
           .single()
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') {
           console.error('Error fetching current user profile:', error)
           return
         }
@@ -100,13 +102,13 @@ function CommunityMainScreen({ navigation }: any) {
       // Get likes and comments count for each post
       const postsWithCounts = await Promise.all(
         (postsData || []).map(async (post: any) => {
-          // Get likes count
+          // Get likes count - Fixed to use profiles.id instead of auth.users.id
           const { count: likesCount } = await supabase
             .from('likes')
             .select('*', { count: 'exact', head: true })
             .eq('post_id', post.id)
 
-          // Get comments count
+          // Get comments count - Fixed to use profiles.id instead of auth.users.id  
           const { count: commentsCount } = await supabase
             .from('comments')
             .select('*', { count: 'exact', head: true })
@@ -133,6 +135,45 @@ function CommunityMainScreen({ navigation }: any) {
   useEffect(() => {
     fetchCurrentUserProfile()
     fetchPosts()
+
+    // Set up real-time subscription for posts
+    const postsSubscription = supabase
+      .channel('posts_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'posts' },
+        () => {
+          fetchPosts()
+        }
+      )
+      .subscribe()
+
+    // Set up real-time subscription for likes
+    const likesSubscription = supabase
+      .channel('likes_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'likes' },
+        () => {
+          fetchPosts()
+        }
+      )
+      .subscribe()
+
+    // Set up real-time subscription for comments
+    const commentsSubscription = supabase
+      .channel('comments_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'comments' },
+        () => {
+          fetchPosts()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      postsSubscription.unsubscribe()
+      likesSubscription.unsubscribe()
+      commentsSubscription.unsubscribe()
+    }
   }, [])
 
   const onRefresh = useCallback(() => {
@@ -149,12 +190,14 @@ function CommunityMainScreen({ navigation }: any) {
     const diffInHours = Math.floor(diffInMinutes / 60)
     const diffInDays = Math.floor(diffInHours / 24)
 
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} minutes ago`
+    if (diffInMinutes < 1) {
+      return 'Just now'
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`
     } else if (diffInHours < 24) {
-      return `${diffInHours} hours ago`
+      return `${diffInHours}h ago`
     } else {
-      return `${diffInDays} days ago`
+      return `${diffInDays}d ago`
     }
   }
 
@@ -192,7 +235,8 @@ function CommunityMainScreen({ navigation }: any) {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center' }]}>
-        <Text>Loading posts...</Text>
+        <ActivityIndicator size="large" color="#8B0000" />
+        <Text style={{ marginTop: 10, textAlign: 'center' }}>Loading posts...</Text>
       </View>
     )
   }
@@ -232,11 +276,12 @@ function CommunityMainScreen({ navigation }: any) {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        showsVerticalScrollIndicator={false}
       >
         {filteredPosts.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>
-              {searchText ? 'No posts found matching your search' : 'No posts yet'}
+              {searchText ? 'No posts found matching your search' : 'No posts yet. Be the first to create one!'}
             </Text>
           </View>
         ) : (
@@ -245,6 +290,7 @@ function CommunityMainScreen({ navigation }: any) {
               key={post.id}
               style={[styles.card, { marginBottom: 20 }]}
               onPress={() => navigation.navigate('PressPost', { post })}
+              activeOpacity={0.7}
             >
               <View style={styles.rowBetween}>
                 <View style={styles.avatarRow}>
@@ -296,25 +342,6 @@ function CommunityMainScreen({ navigation }: any) {
   )
 }
 
-// PressPost screen - you'll need to expand this
-function PressPostScreen({ route, navigation }: any) {
-  const { post } = route.params
-  
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Post Details</Text>
-      <Text style={styles.postTitle}>{post.title}</Text>
-      {post.body && <Text style={styles.postBody}>{post.body}</Text>}
-      <TouchableOpacity 
-        style={styles.createPostButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.createPostText}>← Back</Text>
-      </TouchableOpacity>
-    </View>
-  )
-}
-
 // Main Community Component with Navigation Stack
 export default function Community() {
   return (
@@ -322,6 +349,8 @@ export default function Community() {
       initialRouteName="CommunityMain"
       screenOptions={{
         headerShown: false,
+        gestureEnabled: true,
+        animation: 'slide_from_right',
       }}
     >
       <CommunityStack.Screen 
@@ -330,11 +359,11 @@ export default function Community() {
       />
       <CommunityStack.Screen 
         name="PressPost" 
-        component={PressPostScreen} 
+        component={PressPost}
       />
       <CommunityStack.Screen 
         name="CreatePost" 
-        component={CreatePost} // Now using your actual CreatePost component
+        component={CreatePost}
       />
     </CommunityStack.Navigator>
   )

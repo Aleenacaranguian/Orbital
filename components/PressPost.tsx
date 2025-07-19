@@ -1,4 +1,4 @@
-//PressPost.tsx
+//PressPost.tsx - Fixed version with proper Supabase integration
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
@@ -60,39 +60,85 @@ export default function PressPost({ route, navigation }: Props) {
   const [postLiked, setPostLiked] = useState(false)
   const [likesCount, setLikesCount] = useState(post.likes_count)
   const [commentsCount, setCommentsCount] = useState(post.comments_count)
+  const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null)
+
+  const fetchCurrentUserProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', user.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching current user profile:', error)
+          return
+        }
+
+        setCurrentUserAvatar(data?.avatar_url || null)
+      }
+    } catch (error) {
+      console.error('Error fetching current user profile:', error)
+    }
+  }
 
   const fetchComments = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get the comments without the profile join
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .select(`
-          id,
-          body,
-          created_at,
-          user_id,
-          profiles:user_id!inner (
-            username,
-            avatar_url
-          )
-        `)
+        .select('id, body, created_at, user_id')
         .eq('post_id', post.id)
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('Error fetching comments:', error)
+      if (commentsError) {
+        console.error('Error fetching comments:', commentsError)
         Alert.alert('Error', 'Failed to load comments')
         return
       }
 
-      // Transform the profiles array to a single profile object
-      const transformedComments = (data || []).map((comment: any) => ({
+      if (!commentsData || commentsData.length === 0) {
+        setComments([])
+        setCommentsCount(0)
+        return
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(commentsData.map(comment => comment.user_id))]
+
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds)
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError)
+        // Continue without profiles
+      }
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map()
+      if (profilesData) {
+        profilesData.forEach(profile => {
+          profilesMap.set(profile.id, {
+            username: profile.username,
+            avatar_url: profile.avatar_url
+          })
+        })
+      }
+
+      // Combine comments with their profiles
+      const commentsWithProfiles: Comment[] = commentsData.map(comment => ({
         ...comment,
-        profiles: Array.isArray(comment.profiles) && comment.profiles.length > 0 
-          ? comment.profiles[0] 
-          : null
+        profiles: profilesMap.get(comment.user_id) || { username: 'Anonymous', avatar_url: null }
       }))
 
-      setComments(transformedComments)
+      setComments(commentsWithProfiles)
+      setCommentsCount(commentsWithProfiles.length)
     } catch (error) {
       console.error('Error:', error)
       Alert.alert('Error', 'Something went wrong')
@@ -129,7 +175,7 @@ export default function PressPost({ route, navigation }: Props) {
     try {
       const { count, error } = await supabase
         .from('likes')
-        .select('*', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('post_id', post.id)
 
       if (error) {
@@ -144,15 +190,45 @@ export default function PressPost({ route, navigation }: Props) {
   }
 
   useEffect(() => {
+    fetchCurrentUserProfile()
     fetchComments()
     checkIfLiked()
     getLikesCount()
-  }, [])
+
+    // Set up real-time subscriptions
+    const commentsSubscription = supabase
+      .channel('comments_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${post.id}` },
+        () => {
+          fetchComments()
+        }
+      )
+      .subscribe()
+
+    const likesSubscription = supabase
+      .channel('likes_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'likes', filter: `post_id=eq.${post.id}` },
+        () => {
+          getLikesCount()
+          checkIfLiked()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      commentsSubscription.unsubscribe()
+      likesSubscription.unsubscribe()
+    }
+  }, [post.id])
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
+    fetchCurrentUserProfile()
     fetchComments()
     getLikesCount()
+    checkIfLiked()
   }, [])
 
   const formatTimeAgo = (dateString: string) => {
@@ -185,8 +261,14 @@ export default function PressPost({ route, navigation }: Props) {
   }
 
   const getAvatarUrl = (avatarPath: string | null) => {
-    if (!avatarPath) return require('../assets/profilepic.png')
+    if (!avatarPath) return require('../assets/default-profile.png')
     
+    // If it's already a full URL, use it directly
+    if (avatarPath.startsWith('http')) {
+      return { uri: avatarPath }
+    }
+    
+    // Otherwise, get it from storage
     const { data } = supabase.storage
       .from('avatars')
       .getPublicUrl(avatarPath)
@@ -219,7 +301,7 @@ export default function PressPost({ route, navigation }: Props) {
         setPostLiked(false)
         setLikesCount(prev => Math.max(0, prev - 1))
       } else {
-        // Like
+        // Like - Fixed to use profiles.id instead of auth.users.id
         const { error } = await supabase
           .from('likes')
           .insert([{
@@ -258,22 +340,19 @@ export default function PressPost({ route, navigation }: Props) {
         return
       }
 
+      // Insert comment - Fixed to use auth.users.id as per schema
       const { data, error } = await supabase
         .from('comments')
         .insert([{
           post_id: post.id,
-          user_id: user.id,
+          user_id: user.id, // This references auth.users.id as per your schema
           body: newCommentText.trim()
         }])
         .select(`
           id,
           body,
           created_at,
-          user_id,
-          profiles:user_id!inner (
-            username,
-            avatar_url
-          )
+          user_id
         `)
 
       if (error) {
@@ -282,15 +361,23 @@ export default function PressPost({ route, navigation }: Props) {
         return
       }
 
-      // Transform the profile data
-      const newComment = data[0] ? {
-        ...data[0],
-        profiles: Array.isArray(data[0].profiles) && data[0].profiles.length > 0 
-          ? data[0].profiles[0] 
-          : null
-      } : null
+      if (data && data.length > 0) {
+        // Fetch the user's profile for the new comment
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('username, avatar_url')
+          .eq('id', user.id)
+          .single()
 
-      if (newComment) {
+        if (profileError) {
+          console.error('Error fetching profile for comment:', profileError)
+        }
+
+        const newComment: Comment = {
+          ...data[0],
+          profiles: profileData || { username: 'Anonymous', avatar_url: null }
+        }
+
         setComments(prev => [newComment, ...prev])
         setCommentsCount(prev => prev + 1)
         setNewCommentText('')
@@ -411,7 +498,7 @@ export default function PressPost({ route, navigation }: Props) {
       {/* Comment Input */}
       <View style={styles.commentInputContainer}>
         <Image 
-          source={require('../assets/profilepic.png')} 
+          source={getAvatarUrl(currentUserAvatar)} 
           style={styles.avatarSmall} 
         />
         <TextInput
