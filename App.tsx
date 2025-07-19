@@ -1,7 +1,7 @@
+//app.tsx
 import { useEffect, useState } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { supabase } from './lib/supabase'
 import { Session } from '@supabase/supabase-js'
 import Auth from './components/Auth'
@@ -12,7 +12,6 @@ import Community from './components/Community'
 import { Ionicons } from '@expo/vector-icons'
 
 const Tab = createBottomTabNavigator()
-const Stack = createNativeStackNavigator()
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -43,9 +42,7 @@ export default function App() {
               Messaging: 'chatbubble-outline',
               Community: 'heart-outline',
             }
-
             const iconName = iconMap[route.name] || 'help-circle-outline'
-
             return <Ionicons name={iconName} size={size} color={color} />
           },
           tabBarActiveTintColor: '#000',
