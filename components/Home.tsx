@@ -1,3 +1,4 @@
+//home.tsx - Updated with PressPost integration
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -22,6 +23,7 @@ import EditPetProfile from '../components/EditPetProfile';
 import ViewServiceScreen from '../components/ViewService';
 import EditServiceScreen from '../components/EditService';
 import ReviewsScreen from '../components/Reviews'; 
+import PressPost from '../components/PressPost'; // Import PressPost component
 
 //Pet attributes
 export type Pet = {
@@ -78,8 +80,7 @@ export type Service = {
   accepts_pets_with_transmissible_health_issues?: boolean;
 };
 
-
-
+// Updated HomeStackParamList to include PressPost
 export type HomeStackParamList = {
   ProfileScreen: undefined;
   EditProfile: undefined;
@@ -92,6 +93,22 @@ export type HomeStackParamList = {
   EditService: { service: Service };
   MyPosts: undefined;
   Reviews: { sitterId: string; sitterUsername: string; sitterAvatar: string | null };
+  PressPost: {
+    post: {
+      id: string;
+      title: string;
+      body: string | null;
+      image_url: string | null;
+      created_at: string;
+      user_id: string;
+      profiles: {
+        username: string;
+        avatar_url: string | null;
+      } | null;
+      likes_count: number;
+      comments_count: number;
+    };
+  };
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -297,6 +314,11 @@ export default function Home() {
         name="Reviews" 
         component={ReviewsScreen} 
         options={{ title: 'Reviews' }} 
+      />
+      <Stack.Screen 
+        name="PressPost" 
+        component={PressPost} 
+        options={{ title: 'Post Details' }} 
       />
     </Stack.Navigator>
   );

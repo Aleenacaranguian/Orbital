@@ -299,8 +299,7 @@ export default function MyPets() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>My Pets</Text>
-
+ 
       {pets.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No pets added yet 🐶</Text>
@@ -379,13 +378,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef5ec',
     flex: 1,
   },
-  header: {
-    fontSize: 35,
-    fontWeight: '600',
-    alignSelf: 'center',
-    marginBottom: 40,
-    color: '#844d3e',
-  },
+
   listContainer: {
     paddingBottom: 20,
   },
