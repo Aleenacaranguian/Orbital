@@ -1,4 +1,4 @@
-// Community.tsx - Fixed version with proper Supabase integration
+// Community.tsx - Enhanced version with better image handling
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
@@ -50,6 +50,7 @@ function CommunityMainScreen({ navigation }: any) {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null)
+  const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set())
 
   const fetchCurrentUserProfile = async () => {
     try {
@@ -102,13 +103,13 @@ function CommunityMainScreen({ navigation }: any) {
       // Get likes and comments count for each post
       const postsWithCounts = await Promise.all(
         (postsData || []).map(async (post: any) => {
-          // Get likes count - Fixed to use profiles.id instead of auth.users.id
+          // Get likes count
           const { count: likesCount } = await supabase
             .from('likes')
             .select('*', { count: 'exact', head: true })
             .eq('post_id', post.id)
 
-          // Get comments count - Fixed to use profiles.id instead of auth.users.id  
+          // Get comments count
           const { count: commentsCount } = await supabase
             .from('comments')
             .select('*', { count: 'exact', head: true })
@@ -178,6 +179,7 @@ function CommunityMainScreen({ navigation }: any) {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
+    setImageLoadErrors(new Set()) // Reset image load errors on refresh
     fetchCurrentUserProfile()
     fetchPosts()
   }, [])
@@ -204,6 +206,12 @@ function CommunityMainScreen({ navigation }: any) {
   const getImageUrl = (imagePath: string | null): string | null => {
     if (!imagePath) return null
     
+    // If it's already a full URL, return it directly
+    if (imagePath.startsWith('http')) {
+      return imagePath
+    }
+    
+    // Otherwise, get it from Supabase storage
     const { data } = supabase.storage
       .from('post-images')
       .getPublicUrl(imagePath)
@@ -225,6 +233,10 @@ function CommunityMainScreen({ navigation }: any) {
       .getPublicUrl(avatarPath)
     
     return { uri: data.publicUrl }
+  }
+
+  const handleImageError = (postId: string) => {
+    setImageLoadErrors(prev => new Set(prev).add(postId))
   }
 
   const filteredPosts = posts.filter(post =>
@@ -285,57 +297,74 @@ function CommunityMainScreen({ navigation }: any) {
             </Text>
           </View>
         ) : (
-          filteredPosts.map(post => (
-            <TouchableOpacity
-              key={post.id}
-              style={[styles.card, { marginBottom: 20 }]}
-              onPress={() => navigation.navigate('PressPost', { post })}
-              activeOpacity={0.7}
-            >
-              <View style={styles.rowBetween}>
-                <View style={styles.avatarRow}>
-                  <Image 
-                    source={getAvatarUrl(post.profiles?.avatar_url || null)} 
-                    style={styles.avatar} 
-                  />
-                  <View>
-                    <Text style={styles.subLabel}>
-                      {post.profiles?.username || 'Anonymous'}
-                    </Text>
-                    <Text style={styles.helperText}>
-                      {formatTimeAgo(post.created_at)}
-                    </Text>
+          filteredPosts.map(post => {
+            const imageUrl = getImageUrl(post.image_url)
+            const hasValidImage = imageUrl && !imageLoadErrors.has(post.id)
+            
+            return (
+              <TouchableOpacity
+                key={post.id}
+                style={[styles.card, { marginBottom: 20 }]}
+                onPress={() => navigation.navigate('PressPost', { post })}
+                activeOpacity={0.7}
+              >
+                <View style={styles.rowBetween}>
+                  <View style={styles.avatarRow}>
+                    <Image 
+                      source={getAvatarUrl(post.profiles?.avatar_url || null)} 
+                      style={styles.avatar} 
+                    />
+                    <View>
+                      <Text style={styles.subLabel}>
+                        {post.profiles?.username || 'Anonymous'}
+                      </Text>
+                      <Text style={styles.helperText}>
+                        {formatTimeAgo(post.created_at)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              <Text style={styles.postTitle}>{post.title}</Text>
-              {post.body && (
-                <Text style={styles.postBody} numberOfLines={3}>
-                  {post.body}
-                </Text>
-              )}
+                <Text style={styles.postTitle}>{post.title}</Text>
+                {post.body && (
+                  <Text style={styles.postBody} numberOfLines={3}>
+                    {post.body}
+                  </Text>
+                )}
 
-              {post.image_url && getImageUrl(post.image_url) && (
-                <Image
-                  source={{ uri: getImageUrl(post.image_url)! }}
-                  style={styles.postImage}
-                  resizeMode="cover"
-                />
-              )}
+                {/* Enhanced Image Display - Same as PressPost */}
+                {hasValidImage && (
+                  <View style={styles.imageContainer}>
+                    <Image
+                      source={{ uri: imageUrl }}
+                      style={styles.postImage}
+                      resizeMode="cover"
+                      onError={() => handleImageError(post.id)}
+                      onLoad={() => {
+                        // Remove from error set if it loads successfully
+                        setImageLoadErrors(prev => {
+                          const newSet = new Set(prev)
+                          newSet.delete(post.id)
+                          return newSet
+                        })
+                      }}
+                    />
+                  </View>
+                )}
 
-              <View style={[styles.rowBetween, { marginTop: 15 }]}>
-                <View style={styles.interactionRow}>
-                  <Text style={styles.emoji}>❤️</Text>
-                  <Text style={styles.interactionText}>{post.likes_count}</Text>
+                <View style={[styles.rowBetween, { marginTop: 15 }]}>
+                  <View style={styles.interactionRow}>
+                    <Text style={styles.emoji}>❤️</Text>
+                    <Text style={styles.interactionText}>{post.likes_count}</Text>
+                  </View>
+                  <View style={styles.interactionRow}>
+                    <Text style={styles.emoji}>💬</Text>
+                    <Text style={styles.interactionText}>{post.comments_count}</Text>
+                  </View>
                 </View>
-                <View style={styles.interactionRow}>
-                  <Text style={styles.emoji}>💬</Text>
-                  <Text style={styles.interactionText}>{post.comments_count}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))
+              </TouchableOpacity>
+            )
+          })
         )}
       </ScrollView>
     </View>
@@ -489,11 +518,20 @@ const styles = StyleSheet.create({
     color: '#555',
     marginBottom: 10,
   },
+  imageContainer: {
+    marginVertical: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   postImage: {
     width: '100%',
-    height: 180,
-    borderRadius: 10,
-    marginBottom: 10,
+    height: 200,
+    backgroundColor: '#f0f0f0', // Placeholder background while loading
   },
   interactionRow: {
     flexDirection: 'row',
