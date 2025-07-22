@@ -1,4 +1,4 @@
-//PressPost.tsx - Fixed version with proper Supabase integration
+//PressPost.tsx - Fixed keyboard issues with blue back button
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
@@ -11,6 +11,11 @@ import {
   Alert,
   RefreshControl,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  Dimensions,
+  StatusBar,
 } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { supabase } from '../lib/supabase'
@@ -51,6 +56,9 @@ type Props = NativeStackScreenProps<CommunityStackParamList, 'PressPost'>
 
 export default function PressPost({ route, navigation }: Props) {
   const { post } = route.params
+  const screenHeight = Dimensions.get('window').height
+  const statusBarHeight = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 24
+  const safeAreaBottom = Platform.OS === 'ios' ? 34 : 0
   
   const [comments, setComments] = useState<Comment[]>([])
   const [newCommentText, setNewCommentText] = useState('')
@@ -61,6 +69,8 @@ export default function PressPost({ route, navigation }: Props) {
   const [likesCount, setLikesCount] = useState(post.likes_count)
   const [commentsCount, setCommentsCount] = useState(post.comments_count)
   const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
 
   const fetchCurrentUserProfile = async () => {
     try {
@@ -195,6 +205,17 @@ export default function PressPost({ route, navigation }: Props) {
     checkIfLiked()
     getLikesCount()
 
+    // Keyboard event listeners - simplified and more reliable
+    const keyboardShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height)
+      setIsKeyboardVisible(true)
+    })
+    
+    const keyboardHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0)
+      setIsKeyboardVisible(false)
+    })
+
     // Set up real-time subscriptions
     const commentsSubscription = supabase
       .channel('comments_changes')
@@ -218,6 +239,8 @@ export default function PressPost({ route, navigation }: Props) {
       .subscribe()
 
     return () => {
+      keyboardShowListener.remove()
+      keyboardHideListener.remove()
       commentsSubscription.unsubscribe()
       likesSubscription.unsubscribe()
     }
@@ -301,7 +324,7 @@ export default function PressPost({ route, navigation }: Props) {
         setPostLiked(false)
         setLikesCount(prev => Math.max(0, prev - 1))
       } else {
-        // Like - Fixed to use profiles.id instead of auth.users.id
+        // Like
         const { error } = await supabase
           .from('likes')
           .insert([{
@@ -340,12 +363,12 @@ export default function PressPost({ route, navigation }: Props) {
         return
       }
 
-      // Insert comment - Fixed to use auth.users.id as per schema
+      // Insert comment
       const { data, error } = await supabase
         .from('comments')
         .insert([{
           post_id: post.id,
-          user_id: user.id, // This references auth.users.id as per your schema
+          user_id: user.id,
           body: newCommentText.trim()
         }])
         .select(`
@@ -381,6 +404,7 @@ export default function PressPost({ route, navigation }: Props) {
         setComments(prev => [newComment, ...prev])
         setCommentsCount(prev => prev + 1)
         setNewCommentText('')
+        Keyboard.dismiss()
       }
     } catch (error) {
       console.error('Error:', error)
@@ -389,6 +413,16 @@ export default function PressPost({ route, navigation }: Props) {
       setSubmittingComment(false)
     }
   }
+
+  const focusTextInput = () => {
+    // Force focus on the TextInput - this can help with keyboard issues
+    if (textInputRef.current) {
+      textInputRef.current.focus()
+    }
+  }
+
+  // Add ref for TextInput
+  const textInputRef = React.useRef<TextInput>(null)
 
   if (loading) {
     return (
@@ -399,133 +433,161 @@ export default function PressPost({ route, navigation }: Props) {
     )
   }
 
+  const inputContainerHeight = 80 + safeAreaBottom
+
   return (
     <View style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
-        <View style={styles.card}>
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-
-          {/* Original Post */}
-          <View style={styles.postHeader}>
-            <View style={styles.avatarRow}>
-              <Image 
-                source={getAvatarUrl(post.profiles?.avatar_url || null)} 
-                style={styles.avatar} 
-              />
-              <View>
-                <Text style={styles.username}>
-                  {post.profiles?.username || 'Anonymous'}
-                </Text>
-                <Text style={styles.helperText}>
-                  {formatTimeAgo(post.created_at)}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <Text style={styles.postTitle}>{post.title}</Text>
-          {post.body && (
-            <Text style={styles.postText}>{post.body}</Text>
-          )}
-
-          {post.image_url && getImageUrl(post.image_url) && (
-            <Image
-              source={{ uri: getImageUrl(post.image_url)! }}
-              style={styles.postImage}
-              resizeMode="cover"
-            />
-          )}
-
-          <View style={styles.reactionRow}>
-            <TouchableOpacity
-              style={styles.reaction}
-              onPress={togglePostLike}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.emoji, postLiked && { color: 'red' }]}>❤️</Text>
-              <Text style={styles.reactionText}>{likesCount}</Text>
-            </TouchableOpacity>
-            <View style={styles.reaction}>
-              <Text style={styles.emoji}>💬</Text>
-              <Text style={styles.reactionText}>{commentsCount}</Text>
-            </View>
-          </View>
-
-          {/* Comments Section */}
-          <View style={styles.commentsHeader}>
-            <Text style={styles.commentsTitle}>Comments ({commentsCount})</Text>
-          </View>
-
-          {comments.length === 0 ? (
-            <View style={styles.emptyComments}>
-              <Text style={styles.emptyCommentsText}>No comments yet. Be the first to comment!</Text>
-            </View>
-          ) : (
-            comments.map(comment => (
-              <View key={comment.id} style={styles.commentSection}>
-                <View style={styles.avatarRow}>
-                  <Image 
-                    source={getAvatarUrl(comment.profiles?.avatar_url || null)} 
-                    style={styles.avatarSmall} 
-                  />
-                  <View>
-                    <Text style={styles.username}>
-                      {comment.profiles?.username || 'Anonymous'}
-                    </Text>
-                    <Text style={styles.helperText}>
-                      {formatTimeAgo(comment.created_at)}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.commentText}>{comment.body}</Text>
-              </View>
-            ))
-          )}
-        </View>
-      </ScrollView>
-
-      {/* Comment Input */}
-      <View style={styles.commentInputContainer}>
-        <Image 
-          source={getAvatarUrl(currentUserAvatar)} 
-          style={styles.avatarSmall} 
-        />
-        <TextInput
-          placeholder="Write a comment..."
-          placeholderTextColor="#666"
-          style={styles.commentInput}
-          value={newCommentText}
-          onChangeText={setNewCommentText}
-          multiline
-          maxLength={500}
-          editable={!submittingComment}
-        />
-        <TouchableOpacity 
-          onPress={onSendComment}
-          disabled={submittingComment || !newCommentText.trim()}
-          style={[
-            styles.sendButton,
-            (!newCommentText.trim() || submittingComment) && styles.sendButtonDisabled
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContainer,
+            { 
+              paddingBottom: inputContainerHeight + 20,
+              paddingTop: statusBarHeight
+            }
           ]}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {submittingComment ? (
-            <ActivityIndicator size="small" color="#8B0000" />
-          ) : (
-            <Text style={styles.sendArrow}>➤</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          <View style={styles.card}>
+          <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+          >
+            <Text style={styles.backButtonText}>‹ Back</Text>
+            </TouchableOpacity>
+            {/* Original Post */}
+            <View style={styles.postHeader}>
+              <View style={styles.avatarRow}>
+                <Image 
+                  source={getAvatarUrl(post.profiles?.avatar_url || null)} 
+                  style={styles.avatar} 
+                />
+                <View>
+                  <Text style={styles.username}>
+                    {post.profiles?.username || 'Anonymous'}
+                  </Text>
+                  <Text style={styles.helperText}>
+                    {formatTimeAgo(post.created_at)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <Text style={styles.postTitle}>{post.title}</Text>
+            {post.body && (
+              <Text style={styles.postText}>{post.body}</Text>
+            )}
+
+            {post.image_url && getImageUrl(post.image_url) && (
+              <Image
+                source={{ uri: getImageUrl(post.image_url)! }}
+                style={styles.postImage}
+                resizeMode="cover"
+              />
+            )}
+
+            <View style={styles.reactionRow}>
+              <TouchableOpacity
+                style={styles.reaction}
+                onPress={togglePostLike}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.emoji, postLiked && { color: 'red' }]}>❤️</Text>
+                <Text style={styles.reactionText}>{likesCount}</Text>
+              </TouchableOpacity>
+              <View style={styles.reaction}>
+                <Text style={styles.emoji}>💬</Text>
+                <Text style={styles.reactionText}>{commentsCount}</Text>
+              </View>
+            </View>
+
+            {/* Comments Section */}
+            <View style={styles.commentsHeader}>
+              <Text style={styles.commentsTitle}>Comments ({commentsCount})</Text>
+            </View>
+
+            {comments.length === 0 ? (
+              <View style={styles.emptyComments}>
+                <Text style={styles.emptyCommentsText}>No comments yet. Be the first to comment!</Text>
+              </View>
+            ) : (
+              comments.map(comment => (
+                <View key={comment.id} style={styles.commentSection}>
+                  <View style={styles.avatarRow}>
+                    <Image 
+                      source={getAvatarUrl(comment.profiles?.avatar_url || null)} 
+                      style={styles.avatarSmall} 
+                    />
+                    <View style={styles.commentUserInfo}>
+                      <Text style={styles.username}>
+                        {comment.profiles?.username || 'Anonymous'}
+                      </Text>
+                      <Text style={styles.helperText}>
+                        {formatTimeAgo(comment.created_at)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.commentText}>{comment.body}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Comment Input - Simplified positioning */}
+        <View style={styles.commentInputContainer}>
+          <TouchableOpacity onPress={focusTextInput} activeOpacity={1}>
+            <Image 
+              source={getAvatarUrl(currentUserAvatar)} 
+              style={styles.avatarSmall} 
+            />
+          </TouchableOpacity>
+          <TextInput
+            ref={textInputRef}
+            placeholder="Write a comment..."
+            placeholderTextColor="#666"
+            style={styles.commentInput}
+            value={newCommentText}
+            onChangeText={setNewCommentText}
+            multiline={true}
+            maxLength={500}
+            editable={!submittingComment}
+            blurOnSubmit={false}
+            returnKeyType="default"
+            textAlignVertical="top"
+            autoCorrect={true}
+            spellCheck={true}
+            keyboardType="default"
+            onFocus={() => console.log('TextInput focused')}
+            onBlur={() => console.log('TextInput blurred')}
+          />
+          <TouchableOpacity 
+            onPress={onSendComment}
+            disabled={submittingComment || !newCommentText.trim()}
+            style={[
+              styles.sendButton,
+              (!newCommentText.trim() || submittingComment) && styles.sendButtonDisabled
+            ]}
+            activeOpacity={0.7}
+          >
+            {submittingComment ? (
+              <ActivityIndicator size="small" color="#8B0000" />
+            ) : (
+              <Text style={styles.sendArrow}>➤</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </View>
   )
 }
@@ -535,33 +597,37 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF3E3',
   },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+  },
   scrollContainer: {
-    paddingBottom: 100,
+    flexGrow: 1,
   },
   card: {
     backgroundColor: 'white',
-    margin: 20,
-    marginTop: 60,
+    margin: 16,
+    marginTop: 20,
     borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   backButton: {
-    backgroundColor: '#FFF176',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 8,
     alignSelf: 'flex-start',
     marginBottom: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
   },
   backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#007AFF', // iOS blue color
   },
   postHeader: {
     marginBottom: 15,
@@ -576,12 +642,14 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     marginRight: 15,
+    backgroundColor: '#f0f0f0',
   },
   avatarSmall: {
     width: 40,
     height: 40,
     borderRadius: 20,
     marginRight: 12,
+    backgroundColor: '#f0f0f0',
   },
   username: {
     fontSize: 16,
@@ -598,6 +666,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
     color: '#333',
+    lineHeight: 26,
   },
   postText: {
     fontSize: 16,
@@ -610,6 +679,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 10,
     marginBottom: 15,
+    backgroundColor: '#f0f0f0',
   },
   reactionRow: {
     flexDirection: 'row',
@@ -650,11 +720,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888',
     textAlign: 'center',
+    lineHeight: 22,
   },
   commentSection: {
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f5f5f5',
+  },
+  commentUserInfo: {
+    flex: 1,
   },
   commentText: {
     fontSize: 15,
@@ -666,28 +740,29 @@ const styles = StyleSheet.create({
   commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingVertical: 15,
+    paddingTop: 15,
     paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 10,
     borderTopWidth: 1,
     borderColor: '#ddd',
     backgroundColor: 'white',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   commentInput: {
     flex: 1,
     backgroundColor: '#f8f8f8',
     borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     marginRight: 10,
     fontSize: 15,
-    maxHeight: 80,
+    maxHeight: 100,
+    minHeight: 40,
+    color: '#333',
   },
   sendButton: {
-    padding: 8,
+    padding: 10,
+    alignSelf: 'flex-end',
+    marginBottom: 5,
   },
   sendButtonDisabled: {
     opacity: 0.5,

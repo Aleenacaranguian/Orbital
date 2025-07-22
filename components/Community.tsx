@@ -49,31 +49,7 @@ function CommunityMainScreen({ navigation }: any) {
   const [searchText, setSearchText] = useState('')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
-  const [currentUserAvatar, setCurrentUserAvatar] = useState<string | null>(null)
   const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set())
-
-  const fetchCurrentUserProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('id', user.id)
-          .single()
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching current user profile:', error)
-          return
-        }
-
-        setCurrentUserAvatar(data?.avatar_url || null)
-      }
-    } catch (error) {
-      console.error('Error fetching current user profile:', error)
-    }
-  }
 
   const fetchPosts = async () => {
     try {
@@ -134,7 +110,6 @@ function CommunityMainScreen({ navigation }: any) {
   }
 
   useEffect(() => {
-    fetchCurrentUserProfile()
     fetchPosts()
 
     // Set up real-time subscription for posts
@@ -180,7 +155,6 @@ function CommunityMainScreen({ navigation }: any) {
   const onRefresh = useCallback(() => {
     setRefreshing(true)
     setImageLoadErrors(new Set()) // Reset image load errors on refresh
-    fetchCurrentUserProfile()
     fetchPosts()
   }, [])
 
@@ -257,14 +231,6 @@ function CommunityMainScreen({ navigation }: any) {
     <View style={styles.container}>
       <View style={styles.topSection}>
         <Text style={styles.header}>COMMUNITY</Text>
-        
-        {/* Current user avatar in top right */}
-        <View style={styles.currentUserAvatarContainer}>
-          <Image 
-            source={getAvatarUrl(currentUserAvatar)} 
-            style={styles.currentUserAvatar} 
-          />
-        </View>
       </View>
 
       <View style={styles.rowBetween}>
@@ -408,8 +374,7 @@ const styles = StyleSheet.create({
   },
   topSection: {
     width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
@@ -418,19 +383,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#8B0000',
     textAlign: 'center',
-    flex: 1,
-  },
-  currentUserAvatarContainer: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  currentUserAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#8B0000',
   },
   rowBetween: {
     flexDirection: 'row',

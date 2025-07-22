@@ -340,6 +340,91 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const handleDeletePost = async (postId: string, postTitle: string) => {
+    Alert.alert(
+      'Delete Post',
+      `Are you sure you want to delete "${postTitle}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // First delete associated comments
+              const { error: commentsError } = await supabase
+                .from('comments')
+                .delete()
+                .eq('post_id', postId);
+
+              if (commentsError) {
+                console.error('Error deleting comments:', commentsError);
+              }
+
+              // Delete associated likes
+              const { error: likesError } = await supabase
+                .from('likes')
+                .delete()
+                .eq('post_id', postId);
+
+              if (likesError) {
+                console.error('Error deleting likes:', likesError);
+              }
+
+              // Finally delete the post
+              const { error: postError } = await supabase
+                .from('posts')
+                .delete()
+                .eq('id', postId)
+                .eq('user_id', currentUserId);
+
+              if (postError) throw postError;
+
+              // Refresh the content
+              await fetchUserContent();
+              Alert.alert('Success', 'Post deleted successfully.');
+            } catch (error) {
+              console.error('Delete post error:', error);
+              Alert.alert('Error', 'Failed to delete post.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('comments')
+                .delete()
+                .eq('id', commentId)
+                .eq('user_id', currentUserId);
+
+              if (error) throw error;
+
+              // Refresh the content
+              await fetchUserContent();
+              Alert.alert('Success', 'Comment deleted successfully.');
+            } catch (error) {
+              console.error('Delete comment error:', error);
+              Alert.alert('Error', 'Failed to delete comment.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchUserContent();
@@ -393,6 +478,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
       key={post.id}
       style={styles.postCard}
       onPress={() => navigateToPost(post)}
+      onLongPress={() => handleDeletePost(post.id, post.title)}
     >
       <View style={styles.subCard}>
         <View style={styles.userRow}>
@@ -406,6 +492,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
         <Text style={styles.postTitle}>{post.title}</Text>
+        <Text style={styles.tapInstruction}>Tap to view • Long press to delete</Text>
         {post.body && (
           <Text style={styles.postBody} numberOfLines={3}>
             {post.body}
@@ -424,6 +511,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
       key={comment.id}
       style={styles.postCard}
       onPress={() => navigateToCommentPost(comment)}
+      onLongPress={() => handleDeleteComment(comment.id)}
     >
       <View style={styles.subCard}>
         <View style={styles.userRow}>
@@ -441,6 +529,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
             Commented on: "{comment.posts.title}"
           </Text>
         )}
+        <Text style={styles.tapInstruction}>Tap to view • Long press to delete</Text>
         <Text style={styles.postBody}>{comment.body}</Text>
         {comment.posts && (
           <View style={styles.iconRow}>
@@ -508,8 +597,6 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-     
-
       <View style={styles.subCard}>
         <View style={styles.tabs}>
           {['all', 'posts', 'comments'].map((tab) => (
@@ -614,6 +701,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginVertical: 4,
     color: '#4A2C2A',
+  },
+  tapInstruction: {
+    color: '#666',
+    fontSize: 12,
+    marginBottom: 4,
   },
   postBody: {
     fontSize: 14,

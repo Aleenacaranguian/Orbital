@@ -285,15 +285,16 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
   },
+ 
   backButton: {
-    fontSize: 18,
-    color: '#8B0000',
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '400',
+    color: '#007AFF', // iOS blue color
   },
   postButton: {
-    fontSize: 18,
-    color: '#8B0000',
-    fontWeight: 'bold',
+    fontSize: 20,
+    color: '#007AFF',
+    fontWeight: '400',
   },
   disabledButton: {
     opacity: 0.5,
