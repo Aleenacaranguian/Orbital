@@ -13,7 +13,6 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 
-// Import the HomeStackParamList and add PressPost to it
 type HomeStackParamList = {
   ProfileScreen: undefined;
   EditProfile: undefined;
@@ -126,10 +125,8 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
     try {
       setLoading(true);
       
-      // Fetch user's posts
       await fetchUserPosts();
       
-      // Fetch user's comments
       await fetchUserComments();
       
     } catch (error) {
@@ -145,7 +142,6 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
     if (!currentUserId) return;
 
     try {
-      // First get the posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -169,7 +165,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
         return;
       }
 
-      // Get user profile for these posts
+
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
@@ -180,16 +176,16 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
         console.error('Error fetching profile:', profileError);
       }
 
-      // Get likes and comments count for each post
+      //get likes and comments count for each post
       const postsWithCounts = await Promise.all(
         postsData.map(async (post) => {
-          // Get likes count
+          //get likes count
           const { count: likesCount } = await supabase
             .from('likes')
             .select('*', { count: 'exact', head: true })
             .eq('post_id', post.id);
 
-          // Get comments count
+          //get comments count
           const { count: commentsCount } = await supabase
             .from('comments')
             .select('*', { count: 'exact', head: true })
@@ -214,7 +210,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
     if (!currentUserId) return;
 
     try {
-      // Get user's comments
+      //get user's comments
       const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
         .select(`
@@ -237,7 +233,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
         return;
       }
 
-      // Get user profile
+      //get user profile
       const { data: userProfile, error: userProfileError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
@@ -248,10 +244,9 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
         console.error('Error fetching user profile:', userProfileError);
       }
 
-      // Get unique post IDs
       const postIds = [...new Set(commentsData.map(comment => comment.post_id))];
 
-      // Fetch the posts these comments belong to
+      //get the posts these comments belong to
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -268,10 +263,10 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
         console.error('Error fetching posts for comments:', postsError);
       }
 
-      // Get unique user IDs from posts
+
       const postUserIds = postsData ? [...new Set(postsData.map(post => post.user_id))] : [];
 
-      // Fetch profiles for post authors
+      //get profiles for post authors
       const { data: postAuthorsProfiles, error: postAuthorsError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
@@ -281,7 +276,6 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
         console.error('Error fetching post authors profiles:', postAuthorsError);
       }
 
-      // Create maps for easier lookup
       const postsMap = new Map();
       const profilesMap = new Map();
 
@@ -295,13 +289,12 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
         );
       }
 
-      // Get counts for each post and combine data
       const commentsWithPosts = await Promise.all(
         commentsData.map(async (comment) => {
           const post = postsMap.get(comment.post_id);
           
           if (post) {
-            // Get likes and comments count for this post
+            //get likes and comments count for the  post
             const { count: likesCount } = await supabase
               .from('likes')
               .select('*', { count: 'exact', head: true })
@@ -351,7 +344,6 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // First delete associated comments
               const { error: commentsError } = await supabase
                 .from('comments')
                 .delete()
@@ -361,7 +353,6 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
                 console.error('Error deleting comments:', commentsError);
               }
 
-              // Delete associated likes
               const { error: likesError } = await supabase
                 .from('likes')
                 .delete()
@@ -371,7 +362,6 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
                 console.error('Error deleting likes:', likesError);
               }
 
-              // Finally delete the post
               const { error: postError } = await supabase
                 .from('posts')
                 .delete()
@@ -380,7 +370,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
 
               if (postError) throw postError;
 
-              // Refresh the content
+              // refresh content
               await fetchUserContent();
               Alert.alert('Success', 'Post deleted successfully.');
             } catch (error) {
@@ -412,7 +402,7 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
 
               if (error) throw error;
 
-              // Refresh the content
+              //refresh content
               await fetchUserContent();
               Alert.alert('Success', 'Comment deleted successfully.');
             } catch (error) {

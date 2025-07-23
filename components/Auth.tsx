@@ -14,7 +14,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { Input } from '@rneui/themed'
 
-// Manage session auto-refresh
+// manage session auto-refresh
 AppState.addEventListener('change', (state) => {
   if (state === 'active') {
     supabase.auth.startAutoRefresh()

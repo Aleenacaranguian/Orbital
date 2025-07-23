@@ -1,4 +1,3 @@
-// Community.tsx - Enhanced version with better image handling
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
@@ -17,7 +16,6 @@ import { supabase } from '../lib/supabase'
 import CreatePost from './CreatePost'
 import PressPost from './PressPost'
 
-// Define the stack param list
 export type CommunityStackParamList = {
   CommunityMain: undefined
   PressPost: {
@@ -43,7 +41,7 @@ export type Post = {
 
 const CommunityStack = createNativeStackNavigator<CommunityStackParamList>()
 
-// Main Community Screen Component
+
 function CommunityMainScreen({ navigation }: any) {
   const [posts, setPosts] = useState<Post[]>([])
   const [searchText, setSearchText] = useState('')
@@ -53,7 +51,6 @@ function CommunityMainScreen({ navigation }: any) {
 
   const fetchPosts = async () => {
     try {
-      // Fetch posts with profile data and counts
       const { data: postsData, error } = await supabase
         .from('posts')
         .select(`
@@ -76,16 +73,16 @@ function CommunityMainScreen({ navigation }: any) {
         return
       }
 
-      // Get likes and comments count for each post
+      // get likes and comments count for each post
       const postsWithCounts = await Promise.all(
         (postsData || []).map(async (post: any) => {
-          // Get likes count
+          // get likes count
           const { count: likesCount } = await supabase
             .from('likes')
             .select('*', { count: 'exact', head: true })
             .eq('post_id', post.id)
 
-          // Get comments count
+          // get comments count
           const { count: commentsCount } = await supabase
             .from('comments')
             .select('*', { count: 'exact', head: true })
@@ -112,7 +109,6 @@ function CommunityMainScreen({ navigation }: any) {
   useEffect(() => {
     fetchPosts()
 
-    // Set up real-time subscription for posts
     const postsSubscription = supabase
       .channel('posts_changes')
       .on('postgres_changes', 
@@ -123,7 +119,6 @@ function CommunityMainScreen({ navigation }: any) {
       )
       .subscribe()
 
-    // Set up real-time subscription for likes
     const likesSubscription = supabase
       .channel('likes_changes')
       .on('postgres_changes',
@@ -134,7 +129,6 @@ function CommunityMainScreen({ navigation }: any) {
       )
       .subscribe()
 
-    // Set up real-time subscription for comments
     const commentsSubscription = supabase
       .channel('comments_changes')
       .on('postgres_changes',
@@ -154,7 +148,7 @@ function CommunityMainScreen({ navigation }: any) {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
-    setImageLoadErrors(new Set()) // Reset image load errors on refresh
+    setImageLoadErrors(new Set()) 
     fetchPosts()
   }, [])
 
@@ -180,12 +174,10 @@ function CommunityMainScreen({ navigation }: any) {
   const getImageUrl = (imagePath: string | null): string | null => {
     if (!imagePath) return null
     
-    // If it's already a full URL, return it directly
     if (imagePath.startsWith('http')) {
       return imagePath
     }
-    
-    // Otherwise, get it from Supabase storage
+  
     const { data } = supabase.storage
       .from('post-images')
       .getPublicUrl(imagePath)
@@ -196,12 +188,10 @@ function CommunityMainScreen({ navigation }: any) {
   const getAvatarUrl = (avatarPath: string | null) => {
     if (!avatarPath) return require('../assets/default-profile.png')
     
-    // If it's already a full URL, use it directly
     if (avatarPath.startsWith('http')) {
       return { uri: avatarPath }
     }
-    
-    // Otherwise, get it from storage
+   
     const { data } = supabase.storage
       .from('avatars')
       .getPublicUrl(avatarPath)
@@ -298,7 +288,7 @@ function CommunityMainScreen({ navigation }: any) {
                   </Text>
                 )}
 
-                {/* Enhanced Image Display - Same as PressPost */}
+    
                 {hasValidImage && (
                   <View style={styles.imageContainer}>
                     <Image
@@ -307,7 +297,6 @@ function CommunityMainScreen({ navigation }: any) {
                       resizeMode="cover"
                       onError={() => handleImageError(post.id)}
                       onLoad={() => {
-                        // Remove from error set if it loads successfully
                         setImageLoadErrors(prev => {
                           const newSet = new Set(prev)
                           newSet.delete(post.id)
@@ -337,7 +326,6 @@ function CommunityMainScreen({ navigation }: any) {
   )
 }
 
-// Main Community Component with Navigation Stack
 export default function Community() {
   return (
     <CommunityStack.Navigator
@@ -483,7 +471,7 @@ const styles = StyleSheet.create({
   postImage: {
     width: '100%',
     height: 200,
-    backgroundColor: '#f0f0f0', // Placeholder background while loading
+    backgroundColor: '#f0f0f0', 
   },
   interactionRow: {
     flexDirection: 'row',

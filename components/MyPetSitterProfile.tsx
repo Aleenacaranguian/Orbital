@@ -167,7 +167,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
       } else {
         setServices(servicesData || []);
         
-        // Fetch public URLs for service images
+      
         if (servicesData && servicesData.length > 0) {
           const imageUrls: { [key: string]: string } = {};
           

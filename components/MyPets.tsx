@@ -10,7 +10,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 import { HomeStackParamList, Pet } from './Home';
 
-// local fallback image
+//fallback image
 const defaultAvatar = require('../assets/default-profile.png');
 
 type MyPetsScreenProp = NativeStackNavigationProp<HomeStackParamList, 'MyPets'>;
@@ -25,7 +25,6 @@ export default function MyPets() {
   const [newPetImage, setNewPetImage] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
-  // Get URL of the image stored in Supabase
   const getPetImageUrl = (petUrl: string | null) => {
     if (!petUrl) return null;
     const { data } = supabase.storage.from('my-pets').getPublicUrl(petUrl);
@@ -69,7 +68,6 @@ export default function MyPets() {
     }
   };
 
-  // Fetch existing pets from Supabase
   const fetchPets = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -106,7 +104,7 @@ export default function MyPets() {
     }
   };
 
-  // Add new pet to Supabase
+  //add new pet to Supabase
   const handleAddPet = async () => {
     if (!newPetName.trim()) {
       Alert.alert('Error', 'Please enter a pet name.');
@@ -265,7 +263,7 @@ export default function MyPets() {
     };
   }, []);
 
-  // show each pet card
+  //show each pet 
   const renderPetItem = ({ item }: { item: Pet }) => {
     const imageSource =
       item.pet_url && getPetImageUrl(item.pet_url)

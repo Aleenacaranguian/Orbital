@@ -12,7 +12,6 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { supabase } from '../lib/supabase';
 
-// Import the HomeStackParamList from Home.tsx
 import { HomeStackParamList } from './Home';
 
 

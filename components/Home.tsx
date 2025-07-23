@@ -1,4 +1,3 @@
-//home.tsx - Updated with PressPost integration
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -55,10 +54,10 @@ export type Sitter = {
   username?: string;
 };
 
-// Allowed pet_types
+//allowed pet_types
 export type PetType = 'Dog' | 'Cat' | 'Rabbit' | 'Bird' | 'Reptile' | 'Fish';
 
-// Service attributes
+//service attributes
 export type Service = {
   service_id: string; 
   id: string; 
@@ -80,7 +79,7 @@ export type Service = {
   accepts_pets_with_transmissible_health_issues?: boolean;
 };
 
-// Updated HomeStackParamList to include PressPost
+
 export type HomeStackParamList = {
   ProfileScreen: undefined;
   EditProfile: undefined;
@@ -152,7 +151,6 @@ function ProfileScreen({ navigation }: { navigation: any }) {
   useEffect(() => {
     fetchProfile();
 
-    // Set up real-time subscription with proper async handling
     const setupSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       

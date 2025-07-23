@@ -51,7 +51,7 @@ const ReviewsScreen = ({ route }: Props) => {
     try {
       setLoading(true);
 
-      // Fetch reviews with reviewer profile information
+      //get reviews with reviewer profile information
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select(`
@@ -79,7 +79,6 @@ const ReviewsScreen = ({ route }: Props) => {
         return;
       }
 
-      // Fetch profile information for each reviewer
       const fromIds = reviewsData.map(review => review.from_id);
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -90,7 +89,7 @@ const ReviewsScreen = ({ route }: Props) => {
         console.error('Error fetching profiles:', profilesError);
       }
 
-      // Create a map of profile data for quick lookup
+      //make map of profile data for quick lookup
       const profilesMap = new Map<string, ProfileData>();
       profilesData?.forEach(profile => {
         profilesMap.set(profile.id, {
@@ -99,7 +98,6 @@ const ReviewsScreen = ({ route }: Props) => {
         });
       });
 
-      // Transform the data to include profile information
       const transformedReviews: ReviewData[] = reviewsData.map(review => {
         const profileData = profilesMap.get(review.from_id);
         return {
@@ -117,7 +115,7 @@ const ReviewsScreen = ({ route }: Props) => {
       setReviews(transformedReviews);
       setReviewCount(transformedReviews.length);
 
-      // Calculate average rating
+      //calculate average rating
       const validRatings = transformedReviews
         .filter(review => review.stars_int !== null && review.stars_int !== undefined)
         .map(review => review.stars_int as number);

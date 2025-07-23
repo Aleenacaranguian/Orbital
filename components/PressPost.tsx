@@ -1,4 +1,3 @@
-//PressPost.tsx - Updated with messaging-style input
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
@@ -116,21 +115,15 @@ export default function PressPost({ route, navigation }: Props) {
         return
       }
 
-      // Get unique user IDs
       const userIds = [...new Set(commentsData.map(comment => comment.user_id))]
 
-      // Fetch profiles for these users
+      // get profiles for these users
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
         .in('id', userIds)
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError)
-        // Continue without profiles
-      }
-
-      // Create a map of user_id to profile
+      //create a map of user_id to profile
       const profilesMap = new Map()
       if (profilesData) {
         profilesData.forEach(profile => {
@@ -141,7 +134,6 @@ export default function PressPost({ route, navigation }: Props) {
         })
       }
 
-      // Combine comments with their profiles
       const commentsWithProfiles: Comment[] = commentsData.map(comment => ({
         ...comment,
         profiles: profilesMap.get(comment.user_id) || { username: 'Anonymous', avatar_url: null }
@@ -205,7 +197,7 @@ export default function PressPost({ route, navigation }: Props) {
     checkIfLiked()
     getLikesCount()
 
-    // Keyboard event listeners - simplified and more reliable
+
     const keyboardShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
       setKeyboardHeight(e.endCoordinates.height)
       setIsKeyboardVisible(true)
@@ -216,7 +208,6 @@ export default function PressPost({ route, navigation }: Props) {
       setIsKeyboardVisible(false)
     })
 
-    // Set up real-time subscriptions
     const commentsSubscription = supabase
       .channel('comments_changes')
       .on('postgres_changes',
@@ -285,13 +276,11 @@ export default function PressPost({ route, navigation }: Props) {
 
   const getAvatarUrl = (avatarPath: string | null) => {
     if (!avatarPath) return require('../assets/default-profile.png')
-    
-    // If it's already a full URL, use it directly
+  
     if (avatarPath.startsWith('http')) {
       return { uri: avatarPath }
     }
     
-    // Otherwise, get it from storage
     const { data } = supabase.storage
       .from('avatars')
       .getPublicUrl(avatarPath)
@@ -308,7 +297,7 @@ export default function PressPost({ route, navigation }: Props) {
       }
 
       if (postLiked) {
-        // Unlike
+        //unlike
         const { error } = await supabase
           .from('likes')
           .delete()
@@ -363,7 +352,7 @@ export default function PressPost({ route, navigation }: Props) {
         return
       }
 
-      // Insert comment
+      //insert comment
       const { data, error } = await supabase
         .from('comments')
         .insert([{
@@ -385,7 +374,7 @@ export default function PressPost({ route, navigation }: Props) {
       }
 
       if (data && data.length > 0) {
-        // Fetch the user's profile for the new comment
+        // get the user for the new comment
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('username, avatar_url')
@@ -415,13 +404,12 @@ export default function PressPost({ route, navigation }: Props) {
   }
 
   const focusTextInput = () => {
-    // Force focus on the TextInput - this can help with keyboard issues
     if (textInputRef.current) {
       textInputRef.current.focus()
     }
   }
 
-  // Add ref for TextInput
+  
   const textInputRef = React.useRef<TextInput>(null)
 
   if (loading) {
@@ -511,7 +499,7 @@ export default function PressPost({ route, navigation }: Props) {
               </View>
             </View>
 
-            {/* Comments Section */}
+          
             <View style={styles.commentsHeader}>
               <Text style={styles.commentsTitle}>Comments ({commentsCount})</Text>
             </View>
@@ -544,7 +532,6 @@ export default function PressPost({ route, navigation }: Props) {
           </View>
         </ScrollView>
 
-        {/* Comment Input - Updated to match messaging styling */}
         <View style={styles.commentInputContainer}>
           <View style={styles.inputWrapper}>
             <TextInput
@@ -628,7 +615,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 20,
     fontWeight: '400',
-    color: '#007AFF', // iOS blue color
+    color: '#007AFF', 
   },
   postHeader: {
     marginBottom: 15,
@@ -736,7 +723,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#333',
     marginTop: 8,
-    marginLeft: 52, // Align with username
+    marginLeft: 52, 
   },
   commentInputContainer: {
     paddingHorizontal: 20,
