@@ -43,7 +43,7 @@ type Service = {
 type HomeStackParamList = {
   EditService: { service: Service };
   ProfileScreen: undefined; 
-  Home: undefined; // Add Home to the type definition
+  Home: undefined; 
 };
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'EditService'>;
@@ -62,7 +62,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
   const [serviceDetails, setServiceDetails] = useState(service.service_details || '');
   const [serviceImageUrl, setServiceImageUrl] = useState<string | null>(null);
 
-  // Allowed service types
+
   const [openType, setOpenType] = useState(false);
   const [serviceType, setServiceType] = useState(service.service_type);
   const typeOptions = [
@@ -88,7 +88,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
     { label: 'Fish', value: 'Fish' }
   ];
 
-  // Service environments
+ 
   const [noOtherDogsPresent, setNoOtherDogsPresent] = useState(service.no_other_dogs_present || false);
   const [noOtherCatsPresent, setNoOtherCatsPresent] = useState(service.no_other_cats_present || false);
   const [noChildren, setNoChildren] = useState(service.no_children_present || false);
@@ -97,7 +97,6 @@ export default function EditServiceScreen({ route, navigation }: Props) {
   const [acceptsUnsterilisedPets, setAcceptsUnsterilisedPets] = useState(service.accepts_unsterilised_pets || false);
   const [acceptsTransmissiblePets, setAcceptsTransmissiblePets] = useState(service.accepts_pets_with_transmissible_health_issues || false);
 
-  // Allowed housing types
   const housingTypes = [
     'Apartment',
     'HDB',
@@ -107,7 +106,7 @@ export default function EditServiceScreen({ route, navigation }: Props) {
   ];
   const [housingType, setHousingType] = useState(service.housing_type || 'NA');
 
-  // Load service image on component mount
+  
   useEffect(() => {
     if (service.service_url) {
       const { data: imageData } = supabase.storage

@@ -1,4 +1,3 @@
-//viewpetprofile.tsx 
 import React, { useLayoutEffect, useEffect, useState } from 'react';
 import {
   View,
@@ -57,12 +56,10 @@ export default function ViewPetProfile({ route, navigation }: Props) {
     });
   }, [navigation, pet]);
 
-  // Format birthday for display
   const formatBirthday = (birthday: string | null | undefined) => {
     if (!birthday) return 'Not set';
     
     try {
-      // If birthday is in ISO format (YYYY-MM-DD), convert to DD/MM/YYYY
       if (birthday.includes('-')) {
         const [year, month, day] = birthday.split('-');
         return `${day}/${month}/${year}`;
@@ -127,7 +124,7 @@ export default function ViewPetProfile({ route, navigation }: Props) {
         selectTextOnFocus={false}
       />
 
-      {/* Show toggles as disabled Switches */}
+    
       <View style={styles.toggleContainer}>
         <Text style={styles.toggleLabel}>Sterilised</Text>
         <Switch

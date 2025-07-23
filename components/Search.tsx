@@ -162,7 +162,7 @@ function SearchScreen() {
     }
   };
 
-  // Create unique pet identifier since pets don't have individual IDs on supabase
+  //create unique pet identifier since pets don't have individual IDs on supabase
   const getPetUniqueId = (pet: Pet) => {
     return `${pet.id}-${pet.name}-${pet.created_at || ''}`;
   };
@@ -171,15 +171,15 @@ function SearchScreen() {
     const petId = getPetUniqueId(pet);
     
     if (selectedPetId === petId) {
-      // Deselect pet if already selected
+      //deselect pet if already selected
       setSelectedPetId(null);
     } else {
-      // Select this pet (replacing any previously selected pet)
+      //select this pet (replacing any previously selected pet)
       setSelectedPetId(petId);
     }
   };
 
-  // Get selected pet
+  //get selected pet
   const getSelectedPet = (): Pet | null => {
     if (!selectedPetId) return null;
     return userPets.find(pet => getPetUniqueId(pet) === selectedPetId) || null;
@@ -356,7 +356,7 @@ function SearchScreen() {
     </View>
   );
 }
-//Search Navigation
+
 export default function Search() {
   return (
     <Stack.Navigator>

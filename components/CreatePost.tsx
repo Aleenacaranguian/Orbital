@@ -30,18 +30,6 @@ export default function CreatePost({ navigation }: Props) {
   const [isPosting, setIsPosting] = useState(false)
   const [uploading, setUploading] = useState(false)
 
-  // Function to get public URL for displaying images - SAME AS EXAMPLE
-  const getPostImageUrl = (imagePath: string | null) => {
-    if (!imagePath) return null
-    
-    const { data } = supabase.storage
-      .from('post-images')
-      .getPublicUrl(imagePath)
-    
-    return data.publicUrl
-  }
-
-  // Upload function using same pattern as EditPetProfile
   const uploadPostImage = async (imageUri: string, postTitle: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -50,12 +38,10 @@ export default function CreatePost({ navigation }: Props) {
       const fileExt = imageUri.split('.').pop()
       const fileName = `${user.id}_${postTitle.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.${fileExt}`
 
-      // Convert image to base64 and then to Uint8Array - EXACT SAME AS EXAMPLE
       const fileBase64 = await FileSystem.readAsStringAsync(imageUri, { 
         encoding: FileSystem.EncodingType.Base64 
       })
       
-      // Convert base64 to Uint8Array - EXACT SAME AS EXAMPLE
       const byteCharacters = atob(fileBase64)
       const byteNumbers = new Array(byteCharacters.length)
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -89,7 +75,7 @@ export default function CreatePost({ navigation }: Props) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
-        aspect: [16, 9], // Good aspect ratio for posts
+        aspect: [16, 9], 
         quality: 0.8,
       })
 
@@ -112,7 +98,6 @@ export default function CreatePost({ navigation }: Props) {
     setIsPosting(true)
 
     try {
-      // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       
       if (userError || !user) {
@@ -123,7 +108,7 @@ export default function CreatePost({ navigation }: Props) {
 
       let imagePath = null
       
-      // Upload image if selected - SAME PATTERN AS EXAMPLE
+
       if (imageUri) {
         try {
           setUploading(true)
@@ -136,7 +121,7 @@ export default function CreatePost({ navigation }: Props) {
         }
       }
 
-      // Insert post into database
+      // insert post into database
       const { data, error } = await supabase
         .from('posts')
         .insert({
@@ -289,7 +274,7 @@ const styles = StyleSheet.create({
   backButton: {
     fontSize: 20,
     fontWeight: '400',
-    color: '#007AFF', // iOS blue color
+    color: '#007AFF', 
   },
   postButton: {
     fontSize: 20,

@@ -52,7 +52,7 @@ export default function MessageSitterScreen() {
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [submittingMessage, setSubmittingMessage] = useState(false);
   
-  // New state for tracking conversation ownership
+
   const [canReview, setCanReview] = useState(false);
   const [conversationOwner, setConversationOwner] = useState<string | null>(null);
 
@@ -104,7 +104,7 @@ export default function MessageSitterScreen() {
     }
   }, [currentUser, sitterIdString]);
 
-  // Handle app state changes for polling
+
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active' && currentUser && sitterIdString && !isRealtimeConnected) {
@@ -140,16 +140,16 @@ export default function MessageSitterScreen() {
     }
   };
 
-  // Function to determine conversation ownership
+  //to determine conversation ownership
   const determineConversationOwnership = (messages: Message[]) => {
     if (messages.length === 0) {
-      // current user can potentially be the owner if they send first
+      //current user can potentially be the owner if they send first
       setConversationOwner(null);
       setCanReview(false);
       return;
     }
 
-    // Sort messages by creation time to find the first message
+    //sort messages by creation time to find the first message
     const sortedMessages = [...messages].sort((a, b) => 
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
@@ -159,7 +159,7 @@ export default function MessageSitterScreen() {
     
     setConversationOwner(firstMessageSenderId);
     
-    // Current user can review if they sent the first message
+    //user can review if they sent the first message
     setCanReview(currentUser?.id === firstMessageSenderId);
   };
 
@@ -183,7 +183,6 @@ export default function MessageSitterScreen() {
         if (data && data.length > 0) {
           const latestMessage = data[data.length - 1];
           
-          // Only update if we have new messages
           if (!lastMessageTimestampRef.current || 
               new Date(latestMessage.created_at) > new Date(lastMessageTimestampRef.current)) {
             
@@ -581,7 +580,6 @@ export default function MessageSitterScreen() {
         )}
       />
 
-      {/* Updated Message Input - Matching PressPost.tsx styling */}
       <View style={styles.messageInputContainer}>
         <View style={styles.inputWrapper}>
           <TextInput
@@ -624,7 +622,6 @@ export default function MessageSitterScreen() {
         </View>
       </View>
 
-      {/* Review Modal */}
       {canReview && (
         <Modal
           visible={showReviewModal}
@@ -846,7 +843,7 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'left',
   },
-  // Updated input styling to match PressPost.tsx
+
   messageInputContainer: {
     paddingHorizontal: 20,
     paddingVertical: 15,

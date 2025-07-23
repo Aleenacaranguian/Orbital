@@ -133,7 +133,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         setServiceDetails(serviceData);
       }
     } catch (error) {
-      setServiceDetails(service); // Fallback to route params
+      setServiceDetails(service); 
     }
   };
 
@@ -153,7 +153,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         return;
       }
 
-      // Get pet sitter data
       const { data: petSitterData, error: petSitterError } = await supabase
         .from('pet_sitter')
         .select('*')
@@ -165,7 +164,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         return;
       }
 
-      // Fetch reviews data for real-time rating calculation
+      //get reviews data for real-time rating calculation
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select('to_id, stars_int')
@@ -175,7 +174,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         console.error('Error fetching reviews:', reviewsError);
       }
 
-      // Calculate real-time rating from reviews
+      //calculate real-time rating from reviews
       const userReviews = reviewsData?.map(review => review.stars_int).filter(Boolean) || [];
       const calculatedRating = userReviews.length > 0 
         ? userReviews.reduce((sum, stars) => sum + stars, 0) / userReviews.length 
@@ -299,7 +298,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
   
       const defaultMessage = createDefaultMessage();
   
-      // Insert message into the messages table
+      //add message into the messages table
       const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .insert({
@@ -316,7 +315,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         return;
       }
   
-      // Show success alert without navigation
+      //show success alert
       Alert.alert(
         'Message Sent!', 
         'Your message has been sent to the sitter. You can continue the conversation in your Messaging tab.',

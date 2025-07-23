@@ -94,7 +94,6 @@ export default function SearchResultsScreen({ route }: Props) {
   const navigation = useNavigation();
   const { height } = useWindowDimensions();
 
-  // Get search parameters from route
   const { selectedPets, selectedService, fromDate, toDate } = route.params;
 
   const PRICE_MIN = 15;
@@ -112,12 +111,11 @@ export default function SearchResultsScreen({ route }: Props) {
     fetchServices();
   }, [selectedService, selectedPets]);
 
-  // Fixed fetchServices function
+
   const fetchServices = async () => {
     try {
       setLoading(true);
       
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         Alert.alert('Error', 'Please log in to search for services');
@@ -125,18 +123,17 @@ export default function SearchResultsScreen({ route }: Props) {
       }
       setCurrentUserId(user.id);
 
-      // Build query for services
       let query = supabase
         .from('services')
         .select('*')
-        .neq('id', user.id); // Exclude current user's services
+        .neq('id', user.id); //exclude current user's services
 
-      // Filter by service type if selected
+      //filter by service type if selected
       if (selectedService) {
         query = query.eq('service_type', selectedService);
       }
 
-      // Filter by pet type if pets are selected
+      //filter by pet type if pets are selected
       if (selectedPets && selectedPets.length > 0) {
         const petTypes = [...new Set(selectedPets.map(pet => pet.pet_type).filter(Boolean))];
         if (petTypes.length > 0) {
@@ -154,7 +151,7 @@ export default function SearchResultsScreen({ route }: Props) {
     
       const userIds = servicesData?.map(service => service.id) || [];
       
-      // Fetch profiles for all service providers
+      //get profiles for all service providers
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, username, avatar_url')
@@ -173,7 +170,7 @@ export default function SearchResultsScreen({ route }: Props) {
         console.error('Error fetching pet sitters:', petSittersError);
       }
 
-      // Reviews query using to_id 
+      //reviews query using to_id 
       const { data: reviewsData, error: reviewsError } = await supabase
         .from('reviews')
         .select('to_id, stars_int')
@@ -186,8 +183,7 @@ export default function SearchResultsScreen({ route }: Props) {
       const profilesMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
       const petSittersMap = new Map(petSittersData?.map(sitter => [sitter.id, sitter]) || []);
       const reviewsMap = new Map<string, number[]>();
-      
-      // Group reviews by to_id 
+    
       reviewsData?.forEach(review => {
         if (!reviewsMap.has(review.to_id)) {
           reviewsMap.set(review.to_id, []);
@@ -205,7 +201,7 @@ export default function SearchResultsScreen({ route }: Props) {
     
         const petSitter = petSittersMap.get(service.id);
         
-        // Get reviews data for this sitter
+        //get reviews data for this sitter
         const userReviews = reviewsMap.get(service.id) || [];
         const averageRating = userReviews.length > 0 
           ? userReviews.reduce((sum, stars) => sum + stars, 0) / userReviews.length 
@@ -271,7 +267,7 @@ export default function SearchResultsScreen({ route }: Props) {
     setShowFilter(false);
   }
 
-  // Format dates for display
+  //dates and timings for display
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {
@@ -304,12 +300,11 @@ export default function SearchResultsScreen({ route }: Props) {
     }
     
   
-    
-    // Final fallback to default pet sitter image
+
     return require('../assets/petsitter.png');
   };
 
-  // Star rating with emoji
+  //star rating with emoji
   const renderStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
