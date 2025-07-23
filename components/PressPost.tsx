@@ -1,4 +1,4 @@
-//PressPost.tsx - Fixed keyboard issues with blue back button
+//PressPost.tsx - Updated with messaging-style input
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
@@ -544,48 +544,49 @@ export default function PressPost({ route, navigation }: Props) {
           </View>
         </ScrollView>
 
-        {/* Comment Input - Simplified positioning */}
+        {/* Comment Input - Updated to match messaging styling */}
         <View style={styles.commentInputContainer}>
-          <TouchableOpacity onPress={focusTextInput} activeOpacity={1}>
-            <Image 
-              source={getAvatarUrl(currentUserAvatar)} 
-              style={styles.avatarSmall} 
+          <View style={styles.inputWrapper}>
+            <TextInput
+              ref={textInputRef}
+              placeholder="Type your comment..."
+              placeholderTextColor="#999"
+              style={styles.commentInput}
+              value={newCommentText}
+              onChangeText={setNewCommentText}
+              multiline={true}
+              maxLength={500}
+              editable={!submittingComment}
+              blurOnSubmit={false}
+              returnKeyType="default"
+              textAlignVertical="top"
+              autoCorrect={true}
+              spellCheck={true}
+              keyboardType="default"
+              onFocus={() => console.log('TextInput focused')}
+              onBlur={() => console.log('TextInput blurred')}
             />
-          </TouchableOpacity>
-          <TextInput
-            ref={textInputRef}
-            placeholder="Write a comment..."
-            placeholderTextColor="#666"
-            style={styles.commentInput}
-            value={newCommentText}
-            onChangeText={setNewCommentText}
-            multiline={true}
-            maxLength={500}
-            editable={!submittingComment}
-            blurOnSubmit={false}
-            returnKeyType="default"
-            textAlignVertical="top"
-            autoCorrect={true}
-            spellCheck={true}
-            keyboardType="default"
-            onFocus={() => console.log('TextInput focused')}
-            onBlur={() => console.log('TextInput blurred')}
-          />
-          <TouchableOpacity 
-            onPress={onSendComment}
-            disabled={submittingComment || !newCommentText.trim()}
-            style={[
-              styles.sendButton,
-              (!newCommentText.trim() || submittingComment) && styles.sendButtonDisabled
-            ]}
-            activeOpacity={0.7}
-          >
-            {submittingComment ? (
-              <ActivityIndicator size="small" color="#8B0000" />
-            ) : (
-              <Text style={styles.sendArrow}>➤</Text>
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={onSendComment}
+              disabled={submittingComment || !newCommentText.trim()}
+              style={[
+                styles.sendButton,
+                (!newCommentText.trim() || submittingComment) && styles.sendButtonDisabled
+              ]}
+              activeOpacity={0.7}
+            >
+              {submittingComment ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <View style={[
+                  styles.sendIcon,
+                  newCommentText.trim() ? styles.sendIconActive : styles.sendIconInactive
+                ]}>
+                  <Text style={styles.sendArrow}>➤</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -738,38 +739,60 @@ const styles = StyleSheet.create({
     marginLeft: 52, // Align with username
   },
   commentInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingTop: 15,
     paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 10,
+    paddingVertical: 15,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 15,
     borderTopWidth: 1,
     borderColor: '#ddd',
     backgroundColor: 'white',
   },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 25,
+    paddingLeft: 20,
+    paddingRight: 8,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
   commentInput: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 10,
-    fontSize: 15,
+    fontSize: 16,
     maxHeight: 100,
-    minHeight: 40,
+    minHeight: 36,
     color: '#333',
+    paddingVertical: 8,
+    paddingRight: 10,
   },
   sendButton: {
-    padding: 10,
-    alignSelf: 'flex-end',
-    marginBottom: 5,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
   },
   sendButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.6,
+  },
+  sendIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendIconActive: {
+    backgroundColor: '#8B0000',
+  },
+  sendIconInactive: {
+    backgroundColor: '#ccc',
   },
   sendArrow: {
-    fontSize: 24,
-    color: '#8B0000',
+    fontSize: 16,
+    color: 'white',
     fontWeight: 'bold',
   },
 })

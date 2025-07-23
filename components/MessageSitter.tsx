@@ -13,12 +13,12 @@ import {
   AppState,
   Modal,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MessagingStackParamList } from './Messaging';
-import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -50,6 +50,7 @@ export default function MessageSitterScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [submittingMessage, setSubmittingMessage] = useState(false);
   
   // New state for tracking conversation ownership
   const [canReview, setCanReview] = useState(false);
@@ -63,6 +64,7 @@ export default function MessageSitterScreen() {
 
   const messageChannelRef = useRef<RealtimeChannel | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const textInputRef = useRef<TextInput>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastMessageTimestampRef = useRef<string | null>(null);
 
@@ -138,10 +140,10 @@ export default function MessageSitterScreen() {
     }
   };
 
-  // Function to  conversation ownership
+  // Function to determine conversation ownership
   const determineConversationOwnership = (messages: Message[]) => {
     if (messages.length === 0) {
-      //current user can potentially be the owner if they send first
+      // current user can potentially be the owner if they send first
       setConversationOwner(null);
       setCanReview(false);
       return;
@@ -181,7 +183,7 @@ export default function MessageSitterScreen() {
         if (data && data.length > 0) {
           const latestMessage = data[data.length - 1];
           
-          // Only update if have new messages
+          // Only update if we have new messages
           if (!lastMessageTimestampRef.current || 
               new Date(latestMessage.created_at) > new Date(lastMessageTimestampRef.current)) {
             
@@ -329,10 +331,15 @@ export default function MessageSitterScreen() {
   };
 
   const onSend = async () => {
-    if (message.trim().length === 0) return;
+    if (!message.trim()) {
+      Alert.alert('Error', 'Please enter a message before sending.');
+      return;
+    }
 
     const messageToSend = message.trim();
     const tempId = `temp_${Date.now()}`;
+    
+    setSubmittingMessage(true);
     
     // Create optimistic message object
     const optimisticMessage: Message = {
@@ -344,7 +351,6 @@ export default function MessageSitterScreen() {
       created_at: new Date().toISOString(),
     };
 
-
     setChatMessages(prev => {
       const updatedMessages = [...prev, optimisticMessage];
       
@@ -353,13 +359,11 @@ export default function MessageSitterScreen() {
     });
     setMessage(''); 
     
- 
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: false });
     }, 50);
 
     try {
-    
       const { data, error } = await supabase
         .from('messages')
         .insert({
@@ -383,19 +387,16 @@ export default function MessageSitterScreen() {
         return;
       }
 
-      
       setChatMessages(prev => {
         const updatedMessages = prev.map(msg => msg.id === tempId ? data : msg);
         determineConversationOwnership(updatedMessages);
         return updatedMessages;
       });
 
-     
       lastMessageTimestampRef.current = data.created_at;
 
     } catch (error) {
       console.error('Send error:', error);
-     
       setChatMessages(prev => {
         const filteredMessages = prev.filter(msg => msg.id !== tempId);
         determineConversationOwnership(filteredMessages);
@@ -403,6 +404,8 @@ export default function MessageSitterScreen() {
       });
       Alert.alert('Error', 'Failed to send message');
       setMessage(messageToSend); 
+    } finally {
+      setSubmittingMessage(false);
     }
   };
 
@@ -512,7 +515,6 @@ export default function MessageSitterScreen() {
     );
   };
 
-
   if (error) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -528,7 +530,6 @@ export default function MessageSitterScreen() {
     );
   }
 
-
   if (loading) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -543,7 +544,6 @@ export default function MessageSitterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
@@ -565,7 +565,6 @@ export default function MessageSitterScreen() {
         </View>
       </View>
 
-     
       <FlatList
         ref={flatListRef}
         style={styles.chatList}
@@ -582,26 +581,50 @@ export default function MessageSitterScreen() {
         )}
       />
 
-
-      <View style={styles.messageBox}>
-        <TextInput
-          multiline
-          style={styles.textInput}
-          value={message}
-          onChangeText={setMessage}
-          placeholder="Type your message..."
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity 
-          style={[styles.sendButton, message.trim().length === 0 && styles.sendButtonDisabled]} 
-          onPress={onSend}
-          disabled={message.trim().length === 0}
-        >
-          <Ionicons name="send" size={20} color="white" />
-        </TouchableOpacity>
+      {/* Updated Message Input - Matching PressPost.tsx styling */}
+      <View style={styles.messageInputContainer}>
+        <View style={styles.inputWrapper}>
+          <TextInput
+            ref={textInputRef}
+            placeholder="Type your message..."
+            placeholderTextColor="#999"
+            style={styles.messageInput}
+            value={message}
+            onChangeText={setMessage}
+            multiline={true}
+            maxLength={500}
+            editable={!submittingMessage}
+            blurOnSubmit={false}
+            returnKeyType="default"
+            textAlignVertical="top"
+            autoCorrect={true}
+            spellCheck={true}
+            keyboardType="default"
+          />
+          <TouchableOpacity 
+            onPress={onSend}
+            disabled={submittingMessage || !message.trim()}
+            style={[
+              styles.sendButton,
+              (!message.trim() || submittingMessage) && styles.sendButtonDisabled
+            ]}
+            activeOpacity={0.7}
+          >
+            {submittingMessage ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <View style={[
+                styles.sendIcon,
+                message.trim() ? styles.sendIconActive : styles.sendIconInactive
+              ]}>
+                <Text style={styles.sendArrow}>➤</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
-    
+      {/* Review Modal */}
       {canReview && (
         <Modal
           visible={showReviewModal}
@@ -666,7 +689,6 @@ export default function MessageSitterScreen() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -692,11 +714,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 5,
   },
   header: {
     paddingTop: 50,
@@ -730,16 +747,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: '#007AFF',
     fontWeight: 'normal',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000',
-    textAlign: 'center',
-    flex: 1,
-  },
-  headerSpacer: {
-    width: 30,
   },
   userInfo: {
     flexDirection: 'row',
@@ -839,42 +846,65 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'left',
   },
-  messageBox: {
-    flexDirection: 'row',
-    borderColor: '#e0e0e0',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+  // Updated input styling to match PressPost.tsx
+  messageInputContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 15,
+    borderTopWidth: 1,
+    borderColor: '#ddd',
     backgroundColor: 'white',
-    alignItems: 'flex-end',
-    margin: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
-  textInput: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 25,
+    paddingLeft: 20,
+    paddingRight: 8,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  messageInput: {
     flex: 1,
     fontSize: 16,
-    maxHeight: 120,
-    paddingRight: 8,
+    maxHeight: 100,
+    minHeight: 36,
     color: '#333',
+    paddingVertical: 8,
+    paddingRight: 10,
   },
   sendButton: {
-    backgroundColor: '#8d6e63',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
-    marginLeft: 12,
+    justifyContent: 'center',
+    marginLeft: 8,
   },
   sendButtonDisabled: {
+    opacity: 0.6,
+  },
+  sendIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendIconActive: {
+    backgroundColor: '#8B0000',
+  },
+  sendIconInactive: {
     backgroundColor: '#ccc',
   },
-  // Review styles
+  sendArrow: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  // Review modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
