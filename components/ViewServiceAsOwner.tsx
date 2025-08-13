@@ -46,7 +46,7 @@ type PetSitter = {
 type SitterInfo = {
   profile: Profile;
   petSitter: PetSitter;
-  calculatedRating: number; // Add calculated rating
+  calculatedRating: number; 
 };
 
 const defaultServiceImage = require('../assets/petsitter.png');
@@ -87,7 +87,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
       let serviceData = null;
       let serviceError = null;
       
-      // First try with service_id if it exists
       if (service.service_id) {
         const result = await supabase
           .from('services')
@@ -99,7 +98,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         serviceError = result.error;
       }
       
-      // If that fails, try with id
+
       if (!serviceData && service.id) {
         const result = await supabase
           .from('services')
@@ -111,7 +110,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         serviceError = result.error;
       }
       
-      // If still no data, try querying by sitter id and service name
+     
       if (!serviceData) {
         const result = await supabase
           .from('services')
@@ -315,7 +314,6 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
         return;
       }
   
-      //show success alert
       Alert.alert(
         'Message Sent!', 
         'Your message has been sent to the sitter. You can continue the conversation in your Messaging tab.',
