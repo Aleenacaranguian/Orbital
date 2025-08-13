@@ -94,7 +94,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
         setProfile(profileData);
       }
 
-      // Fetch pet sitter data
+      //get pet sitter data
       const { data: sitterData, error: sitterError } = await supabase
         .from('pet_sitter')
         .select('*')
@@ -124,7 +124,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
         });
       }
 
-      // Count number of reviews 
+      //count number of reviews 
       const { count: reviewCountData, error: reviewCountError } = await supabase
         .from('reviews')
         .select('*', { count: 'exact', head: true })
@@ -136,7 +136,7 @@ export default function MyPetSitterProfile({ navigation }: Props) {
         setReviewCount(reviewCountData || 0);
       }
 
-      // Fetch services
+      //get services
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select(`
@@ -196,7 +196,6 @@ export default function MyPetSitterProfile({ navigation }: Props) {
   useEffect(() => {
     fetchPetSitterProfile();
 
-    // Real-time subscription for profile changes
     const setupSubscription = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       

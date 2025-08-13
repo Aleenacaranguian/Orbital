@@ -142,7 +142,6 @@ export default function CreatePost({ navigation }: Props) {
         {
           text: 'OK',
           onPress: () => {
-            // Reset form
             setTitle('')
             setBody('')
             setImageUri(null)
@@ -166,7 +165,6 @@ export default function CreatePost({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}

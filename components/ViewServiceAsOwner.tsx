@@ -223,8 +223,7 @@ export default function ViewServiceAsOwnerScreen({ route, navigation }: Props) {
       Alert.alert('Error', 'Unable to load sitter information');
       return;
     }
-
-    // Navigate to Reviews screen
+    
     navigation.navigate('Reviews', {
       sitterId: sitterInfo.profile.id,
       sitterUsername: sitterInfo.profile.username,

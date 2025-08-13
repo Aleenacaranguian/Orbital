@@ -13,6 +13,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Replace 'avatars' with your actual bucket name if it's different
+
 export const STORAGE_URL = 'https://jsugmjldxmtpswlyeemx.supabase.co/storage/v1/object/public/avatars';
 

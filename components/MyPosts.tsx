@@ -567,7 +567,6 @@ const MyPostsScreen: React.FC<Props> = ({ navigation }) => {
       return comments.map(comment => renderComment(comment));
     }
 
-    // All tab
     if (allContent.length === 0) {
       return (
         <View style={styles.emptyContainer}>

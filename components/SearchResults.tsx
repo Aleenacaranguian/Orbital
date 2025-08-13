@@ -45,7 +45,7 @@ type Profile = {
   avatar_url?: string;
 };
 
-// Custom slider component
+//Custom slider component
 interface CustomSliderProps {
   minimumValue: number;
   maximumValue: number;
