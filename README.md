@@ -1,5 +1,4 @@
-Project Name 
-PawPals 
+Project Name: PawPals 
 
 Proposed Level of Achievement: 
 Project Gemini 
@@ -71,8 +70,4 @@ Real-Time Updates
 - Sitters can message owners while the pets are in their care to provide reassurance to their owners. This allows owners to still feel connected to their pets.
 Community
 - Our community page allows pet owners and sitters to connect, share advice and support.
-
-MOCK UP
-https://www.figma.com/design/JyD1iCEdVKwVFyXRZQ1WDP/PawPals?node-id=0-1&t=KUi0DMJBoMmoo971-1 (please note that page 3 will not be used)
-
 
