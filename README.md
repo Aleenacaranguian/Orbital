@@ -1,6 +1,4 @@
-Orbital 2025 - Milestone 2
-
-Team Name: 
+Project Name 
 PawPals 
 
 Proposed Level of Achievement: 
